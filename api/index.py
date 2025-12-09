@@ -960,7 +960,7 @@ body.light-mode .main-footer {
 <header class="main-header">
     <div class="container header-content">
     <a href="{{ url_for('home') }}" class="logo">
-    <img src="https://i.postimg.cc/Hk7WjmfN/1000019626-removebg-preview.png" alt="{{ website_name }} Logo" style="height: 45px; width: auto;">
+    <img src="https://i.postimg.cc/3wxTc4K7/1000020248-removebg-preview.png" alt="{{ website_name }} Logo" style="height: 45px; width: auto;">
 </a>
     <div style="display: flex; align-items: center;">
         <div class="theme-toggle">
@@ -1284,7 +1284,7 @@ body.light-mode .main-footer {
         <!-- Section 1: About the Site -->
         <div class="footer-column about-section">
             <a href="{{ url_for('home') }}" class="footer-logo">
-                <img src="https://i.postimg.cc/Hk7WjmfN/1000019626-removebg-preview.png" alt="{{ website_name }} Logo">
+                <img src="https://i.postimg.cc/3wxTc4K7/1000020248-removebg-preview.png" alt="{{ website_name }} Logo">
             </a>
             <p class="footer-description">
                 Your ultimate destination for the latest movies and web series. We are dedicated to providing a seamless entertainment experience.
@@ -2478,7 +2478,7 @@ body.light-mode .episode-item {
         <!-- Section 1: About the Site -->
         <div class="footer-column about-section">
             <a href="{{ url_for('home') }}" class="footer-logo">
-                <img src="https://i.postimg.cc/Hk7WjmfN/1000019626-removebg-preview.png" alt="{{ website_name }} Logo">
+                <img src="https://i.postimg.cc/3wxTc4K7/1000020248-removebg-preview.png" alt="{{ website_name }} Logo">
             </a>
             <p class="footer-description">
                 Your ultimate destination for the latest movies and web series. We are dedicated to providing a seamless entertainment experience.
@@ -2644,7 +2644,7 @@ wait_step1_html = """
 <body>
     <!-- Fixed Header HTML -->
     <header class="fixed-header">
-        <img src="https://i.postimg.cc/Hk7WjmfN/1000019626-removebg-preview.png" alt="Website Logo">
+        <img src="https://i.postimg.cc/3wxTc4K7/1000020248-removebg-preview.png" alt="Website Logo">
     </header>
 
     <div id="top-content" class="page-section">
@@ -2758,7 +2758,7 @@ wait_step2_html = """
 </head>
 <body>
     <header class="fixed-header">
-        <img src="https://i.postimg.cc/Hk7WjmfN/1000019626-removebg-preview.png" alt="Website Logo">
+        <img src="https://i.postimg.cc/3wxTc4K7/1000020248-removebg-preview.png" alt="Website Logo">
     </header>
 
     <div id="top-content" class="page-section">
@@ -2855,7 +2855,7 @@ wait_step3_html = """
 </head>
 <body>
     <header class="fixed-header">
-        <img src="https://i.postimg.cc/Hk7WjmfN/1000019626-removebg-preview.png" alt="Website Logo">
+        <img src="https://i.postimg.cc/3wxTc4K7/1000020248-removebg-preview.png" alt="Website Logo">
     </header>
 
     <div id="top-content" class="page-section">
@@ -3757,7 +3757,7 @@ series_hub_html = """
     <div class="container footer-grid">
         <div class="footer-column about-section">
             <a href="{{ url_for('home') }}" class="footer-logo">
-                <img src="https://i.postimg.cc/Hk7WjmfN/1000019626-removebg-preview.png" alt="{{ website_name }} Logo">
+                <img src="https://i.postimg.cc/3wxTc4K7/1000020248-removebg-preview.png" alt="{{ website_name }} Logo">
             </a>
             <p class="footer-description">Your ultimate destination for the latest movies and web series. We are dedicated to providing a seamless entertainment experience.</p>
         </div>
