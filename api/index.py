@@ -1096,7 +1096,7 @@ body.light-mode .main-footer {
             <div class="ticker-label">Notice</div>
             <div class="ticker-content">
                 <p class="ticker-text">
-                    A warm welcome to you at {{ website_name }}. Here you can search and explore all the latest movies and web series. If you can't find your favorite content, feel free to let us know using the 'Request' option. For all the latest updates and news on new releases, please join our official Telegram channel: @mlswtv. Thank you for visiting and stay with us. ••• {{ website_name }} এ আপনাকে আন্তরিকভাবে স্বাগতম। এখানে আপনি নতুন-পুরানো সব মুভি ও সিরিজ সার্চ করতে এবং দেখতে পারবেন। আপনার পছন্দের কোনো কনটেন্ট খুঁজে না পেলে, 'Request' অপশন ব্যবহার করে আমাদের জানাতে পারেন। সর্বশেষ আপডেট এবং নতুন সব কনটেন্টের খবরের জন্য আমাদের টেলিগ্রাম চ্যানেলে যোগ দিন: @mlswtv। আমাদের সাথে থাকার জন্য ধন্যবাদ।
+                    A warm welcome to you at {{ website_name }}. Here you can search and explore all the latest movies and web series. If you can't find your favorite content, feel free to let us know using the 'Request' option. For all the latest updates and news on new releases, please join our official Telegram channel: @allmoviepsz. Thank you for visiting and stay with us. ••• {{ website_name }} এ আপনাকে আন্তরিকভাবে স্বাগতম। এখানে আপনি নতুন-পুরানো সব মুভি ও সিরিজ সার্চ করতে এবং দেখতে পারবেন। আপনার পছন্দের কোনো কনটেন্ট খুঁজে না পেলে, 'Request' অপশন ব্যবহার করে আমাদের জানাতে পারেন। সর্বশেষ আপডেট এবং নতুন সব কনটেন্টের খবরের জন্য আমাদের টেলিগ্রাম চ্যানেলে যোগ দিন: @allmoviepsz। আমাদের সাথে থাকার জন্য ধন্যবাদ।
                 </p>
             </div>
         </div>
