@@ -1305,15 +1305,15 @@ body.light-mode .main-footer {
         <div class="footer-column community-section">
             <h4 class="footer-column-title">Join Our Community</h4>
             <div class="telegram-buttons-container">
-                <a href="https://t.me/+44eeWi-YTL41MTY1" target="_blank" class="telegram-button notification">
+                <a href="https://t.me/allmoviepsz" target="_blank" class="telegram-button notification">
                     <i class="fas fa-bell"></i>
                     <span><strong>New Content Alerts</strong><small>Get notified for every new upload</small></span>
                 </a>
-                <a href="https://t.me/mlswtvChat" target="_blank" class="telegram-button request">
+                <a href="https://t.me/+0kZRI3EUX54wM2Nl" target="_blank" class="telegram-button request">
                     <i class="fas fa-comments"></i>
                     <span><strong>Join Request Group</strong><small>Request your favorite content</small></span>
                 </a>
-                <a href="https://t.me/mlswtv" target="_blank" class="telegram-button backup">
+                <a href="https://t.me/Yabotz" target="_blank" class="telegram-button backup">
                     <i class="fas fa-shield-alt"></i>
                     <span><strong>Backup Channel</strong><small>Join for future updates</small></span>
                 </a>
@@ -2499,15 +2499,15 @@ body.light-mode .episode-item {
         <div class="footer-column community-section">
             <h4 class="footer-column-title">Join Our Community</h4>
             <div class="telegram-buttons-container">
-                <a href="https://t.me/+44eeWi-YTL41MTY1" target="_blank" class="telegram-button notification">
+                <a href="https://t.me/allmoviepsz" target="_blank" class="telegram-button notification">
                     <i class="fas fa-bell"></i>
                     <span><strong>New Content Alerts</strong><small>Get notified for every new upload</small></span>
                 </a>
-                <a href="https://t.me/mlswtvChat" target="_blank" class="telegram-button request">
+                <a href="https://t.me/+0kZRI3EUX54wM2Nl" target="_blank" class="telegram-button request">
                     <i class="fas fa-comments"></i>
                     <span><strong>Join Request Group</strong><small>Request your favorite content</small></span>
                 </a>
-                <a href="https://t.me/mlswtv" target="_blank" class="telegram-button backup">
+                <a href="https://t.me/Yabotz" target="_blank" class="telegram-button backup">
                     <i class="fas fa-shield-alt"></i>
                     <span><strong>Backup Channel</strong><small>Join for future updates</small></span>
                 </a>
@@ -2671,7 +2671,7 @@ wait_step1_html = """
             <a href="{{ next_step_url }}" class="action-btn ready">Continue</a>
         </div>
     </div>
-    <a href="https://t.me/mlswtv" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+    <a href="https://t.me/allmoviepsz" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
   <footer class="main-footer">
       <p>&copy; 2025 {{ website_name }}. All Rights Reserved.</p>
   </footer>
@@ -2784,7 +2784,7 @@ wait_step2_html = """
             <a href="{{ next_step_url }}" class="action-btn ready">Continue to Final Step</a>
         </div>
     </div>
-    <a href="https://t.me/mlswtv" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+    <a href="https://t.me/allmoviepsz" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
   <footer class="main-footer">
       <p>&copy; 2025 {{ website_name }}. All Rights Reserved.</p>
   </footer>
@@ -3596,15 +3596,15 @@ download_hub_html = """
         <div class="footer-column community-section">
             <h4 class="footer-column-title">Join Our Community</h4>
             <div class="telegram-buttons-container">
-                <a href="https://t.me/+44eeWi-YTL41MTY1" target="_blank" class="telegram-button notification">
+                <a href="https://t.me/allmoviepsz" target="_blank" class="telegram-button notification">
                     <i class="fas fa-bell"></i>
                     <span><strong>New Content Alerts</strong><small>Get notified for every new upload</small></span>
                 </a>
-                <a href="https://t.me/mlswtvChat" target="_blank" class="telegram-button request">
+                <a href="https://t.me/+0kZRI3EUX54wM2Nl" target="_blank" class="telegram-button request">
                     <i class="fas fa-comments"></i>
                     <span><strong>Join Request Group</strong><small>Request your favorite content</small></span>
                 </a>
-                <a href="https://t.me/mlswtv" target="_blank" class="telegram-button backup">
+                <a href="https://t.me/Yabotz" target="_blank" class="telegram-button backup">
                     <i class="fas fa-shield-alt"></i>
                     <span><strong>Backup Channel</strong><small>Join for future updates</small></span>
                 </a>
@@ -3772,15 +3772,15 @@ series_hub_html = """
         <div class="footer-column community-section">
             <h4 class="footer-column-title">Join Our Community</h4>
             <div class="telegram-buttons-container">
-                <a href="https://t.me/+44eeWi-YTL41MTY1" target="_blank" class="telegram-button notification">
+                <a href="https://t.me/allmoviepsz" target="_blank" class="telegram-button notification">
                     <i class="fas fa-bell"></i>
                     <span><strong>New Content Alerts</strong><small>Get notified for every new upload</small></span>
                 </a>
-                <a href="https://t.me/mlswtvChat" target="_blank" class="telegram-button request">
+                <a href="https://t.me/+0kZRI3EUX54wM2Nl" target="_blank" class="telegram-button request">
                     <i class="fas fa-comments"></i>
                     <span><strong>Join Request Group</strong><small>Request your favorite content</small></span>
                 </a>
-                <a href="https://t.me/mlswtv" target="_blank" class="telegram-button backup">
+                <a href="https://t.me/allmoviepsz" target="_blank" class="telegram-button backup">
                     <i class="fas fa-shield-alt"></i>
                     <span><strong>Backup Channel</strong><small>Join for future updates</small></span>
                 </a>
@@ -4067,7 +4067,7 @@ def send_to_telegram(movie_data, movie_id):
         "inline_keyboard": [
             [{"text": "✅ Watch on Website", "url": watch_url}],
             [{"text": "🤔 How to Download?", "url": HOW_TO_DOWNLOAD_URL}],
-            [{"text": "🔔 Join Our Backup Channel", "url": "https://t.me/mlswtv"}] # <-- নতুন বাটন
+            [{"text": "🔔 Join Our Backup Channel", "url": "https://t.me/allmoviepsz"}] # <-- নতুন বাটন
         ]
     }
     reply_markup = json.dumps(keyboard)
