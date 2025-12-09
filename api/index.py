@@ -13,14 +13,14 @@ import json # <--- এই লাইনটি যোগ করুন
 # --- Environment Variables ---
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://MDParvezHossain:MDParvezHossain@cluster0.pma8wsn.mongodb.net/?appName=Cluster0")
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "7dc544d9253bccc3cfecc1c677f69819")
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "01875312198")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "01875312198")
-WEBSITE_NAME = os.environ.get("WEBSITE_NAME", "Mlsw Tv")
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "7477parvez@gmail.com")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "7477parvez@gmail.com")
+WEBSITE_NAME = os.environ.get("WEBSITE_NAME", "All Movie Prz")
 
 # --- START: NEW TELEGRAM SETTINGS (এই অংশটি যোগ করুন) ---
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8425569574:AAG-SrDafXs8pa16aqyWGrbMZuE58PeTyAE")
-TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "-1003150076260") # যেমন: "@yourchannelname" বা "-100123456789"
-HOW_TO_DOWNLOAD_URL = os.environ.get("HOW_TO_DOWNLOAD_URL", "https://t.me/mlswtv_download") # আপনার "How to Download" গাইডের লিংক
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8374125089:AAGwBcn-QI0XuzWlfBREXjodLefqcANaldg")
+TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "-1003377987584") # যেমন: "@yourchannelname" বা "-100123456789"
+HOW_TO_DOWNLOAD_URL = os.environ.get("HOW_TO_DOWNLOAD_URL", "https://t.me/howtomoviedownlod") # আপনার "How to Download" গাইডের লিংক
 # --- END: NEW TELEGRAM SETTINGS ---
 
 # --- Validate Environment Variables ---
