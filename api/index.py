@@ -17,7 +17,7 @@ MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://akash1980:akash1980@clust
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "275aff9f1c570308fa10d14c6f49f998")
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "MRMOHIN198")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "MRMOHIN198")
-WEBSITE_NAME = os.environ.get("WEBSITE_NAME", "FlixBox4u")
+WEBSITE_NAME = os.environ.get("WEBSITE_NAME", "All Movie Prz")
 SECRET_KEY = os.environ.get("SECRET_KEY", "hdf_super_secret_key_1988")
 
 if not all([MONGO_URI, TMDB_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD]):
@@ -60,10 +60,9 @@ try:
     categories_collection = db["categories"]
     languages_collection = db["languages"]
     requests_collection = db["requests"]
-    tg_posts_collection = db["tg_posts"] # For Tracking Auto-Delete Telegram Posts
+    tg_posts_collection = db["tg_posts"]
     
     try:
-        # SUPER FAST INDEXING (Fixed Slowness Issue)
         movies.create_index([("tmdb_id", 1)]) 
         movies.create_index([("views", -1)])
         movies.create_index([("title", 1)])
@@ -139,7 +138,7 @@ def inject_globals():
         site_config = {
             "site_name": WEBSITE_NAME,
             "logo_url": "",
-            "dmca_text": "DMCA : FlixBox4u.Vercel.App Does Not Rip Or Host Any Files On Its Servers. All Files Or Contents Hosted On Third Party Websites. FlixBox4u.Vercel.App Doesn't Accept The Responsibility For Contents Hosted On Third Party Websites. Also FlixBox4u.Vercel.App Doesn't Rip/Pirate Any File. We Just Collect Links From Other Websites. Nothing Else.",
+            "dmca_text": "DMCA : All Movie Prz Does Not Rip Or Host Any Files On Its Servers.",
             "privacy_text": "We respect your privacy. No personal data is collected without consent.",
             "tg_channel_url": "https://t.me/yourchannel",
             "tg_group_url": "https://t.me/yourgroup",
@@ -161,7 +160,8 @@ def inject_globals():
         predefined_languages=all_languages,
         today_date=date.today().strftime("%Y-%m-%d"),
         quote=quote,
-        poster_blur_config=get_poster_blur_config()
+        poster_blur_config=get_poster_blur_config(),
+        get_download_steps_config=get_download_steps_config
     )
 
 # --- TMDB API Helper Function ---
@@ -254,9 +254,7 @@ def send_telegram_post(movie_data, movie_id):
     except Exception as e:
         print("Telegram Auto Post Error:", e)
 
-# --- CORE OFFLINE BACKGROUND SYNC HELPER ---
 def check_and_release_upcoming():
-    """Checks for newly released movies offline and notifies users immediately."""
     try:
         today_str = date.today().strftime("%Y-%m-%d")
         to_update = list(movies.find({
@@ -279,7 +277,6 @@ def check_and_release_upcoming():
     except Exception as e:
         pass
 
-# --- BACKGROUND THREAD FOR AUTO POST & AUTO DELETE ---
 def tg_background_worker():
     while True:
         try:
@@ -325,7 +322,6 @@ def tg_background_worker():
 if os.environ.get('VERCEL') != '1':
     threading.Thread(target=tg_background_worker, daemon=True).start()
 
-# --- GLOBAL APP TASKS (For Vercel / Serverless support) ---
 @app.before_request
 def global_background_tasks():
     check_and_release_upcoming()
@@ -367,15 +363,12 @@ def global_background_tasks():
     except:
         pass
 
-# --- OFFLINE TRIGGER ENDPOINT (CRON) ---
 @app.route('/api/cron/trigger')
 def cron_trigger():
     check_and_release_upcoming()
     global_background_tasks()
     return jsonify({"status": "Background tasks executed successfully"})
 
-
-# --- ADVANCED BULK IMPORT API (AJAX SUPPORT) ---
 @app.route('/admin/api/bulk_fetch_page', methods=['POST'])
 @requires_auth
 def api_bulk_fetch_page():
@@ -452,8 +445,6 @@ def api_bulk_fetch_page():
     except Exception as e:
         return jsonify({"items": [], "stop": True, "error": str(e)})
 
-
-# --- DYNAMIC DOWNLOAD STEP HANDLER ROUTE ---
 @app.route('/download-step/<int:step_num>')
 def download_step(step_num):
     target = request.args.get('target', '#')
@@ -514,8 +505,6 @@ def download_step(step_num):
     """
     return render_template_string(step_html_page)
 
-
-# --- THEME, TELEGRAM & PWA DYNAMIC CSS/JS INJECTION ---
 dynamic_css_and_js = """
 <link rel="manifest" href="/manifest.json">
 <style>
@@ -725,9 +714,6 @@ document.addEventListener("DOMContentLoaded", function() {
 {% endif %}
 """
 
-# =========================================================================================
-# === [START] HTML TEMPLATES ============================================================
-# =========================================================================================
 index_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -889,7 +875,6 @@ index_html = """
             <a href="{{ url_for('request_content') }}">Request</a>
         </nav>
         
-        <!-- SEARCH BAR FOR DESKTOP IN HEADER -->
         <div class="global-search-bar desktop-only-search">
             <div class="global-search-wrapper">
                 <input type="text" id="desktop-search-input" class="global-search-input" placeholder="Search movies, series..." autocomplete="off">
@@ -907,7 +892,6 @@ index_html = """
 </header>
 <style> @media (min-width: 769px) { .mobile-only-header { display: none !important; } .desktop-theme-btn { display: inline-block !important; } } @media (max-width: 768px) { .desktop-only-search { display: none !important; } } </style>
 
-<!-- SEARCH BAR FOR MOBILE UNDER HEADER -->
 <div class="global-search-bar mobile-only-search">
     <div class="global-search-wrapper">
         <input type="text" id="mobile-search-input" class="global-search-input" placeholder="Search movies, series..." autocomplete="off">
@@ -943,8 +927,6 @@ index_html = """
 
 <main>
   {% macro render_movie_card(m) %}
-    {% set download_steps = get_download_steps_config() %}
-    {% set first_step_url = url_for('download_step', step_num=1, target='#') %}
     <a href="{{ url_for('movie_detail', movie_id=m._id) }}" class="movie-card">
       <div class="poster-wrapper">
           {% if m.is_upcoming or (m.release_date and m.release_date|length >= 4 and m.release_date > today_date) %}
@@ -1017,8 +999,6 @@ index_html = """
     {% endif %}
 
     <div class="container">
-      
-      <!-- TOP 10 VIEWS SLIDERS -->
       {% if top_movies %}
       <section class="category-section">
           <div class="category-header"><h2 class="category-title" style="color:var(--primary-color);">🔥 Top 10 Viewed Movies</h2></div>
@@ -1091,7 +1071,6 @@ index_html = """
         } catch(e) {}
     }
     
-    // Auto blur on reload if set
     if (blurConfig.enabled && !localStorage.getItem('posterBlurInitialized')) {
         localStorage.setItem('unblurPosters', 'false');
         localStorage.setItem('posterBlurInitialized', 'true');
@@ -1206,7 +1185,6 @@ index_html = """
 detail_html = """
 <!DOCTYPE html>
 <html lang="en">
-<!-- Detail HTML -->
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -1724,7 +1702,6 @@ admin_html = """
         .admin-movie-card .action-buttons { display: flex; gap: 8px; }
         .admin-movie-card .action-buttons .btn { flex: 1; text-align: center; padding: 6px; font-size: 0.85rem; }
         
-        /* AJAX BULK FETCH GRID */
         .live-fetch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; max-height: 300px; overflow-y: auto; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #333;}
         @media(max-width: 768px) { .live-fetch-grid { grid-template-columns: repeat(2, 1fr); } }
         .live-item { background: #222; text-align: center; border-radius: 5px; overflow: hidden; padding-bottom: 5px; }
@@ -1757,7 +1734,7 @@ admin_html = """
         <li class="tab-btn" onclick="showSection('sec-languages', this)"><i class="fas fa-language"></i> Languages</li>
         <li class="tab-btn" onclick="showSection('sec-popup', this)"><i class="fas fa-bell"></i> Popup & Push Noti</li>
         <li class="tab-btn" onclick="showSection('sec-siteconfig', this)"><i class="fas fa-cogs"></i> Site & Blur Settings</li>
-        <li class="tab-btn" onclick="showSection('sec-download-steps', this)"><i class="fas fa-歩"></i> Download Step Settings</li>
+        <li class="tab-btn" onclick="showSection('sec-download-steps', this)"><i class="fas fa-list-ol"></i> Download Step Settings</li>
         <li class="tab-btn" onclick="showSection('sec-telegram-bot', this)"><i class="fab fa-telegram"></i> Telegram Auto Post</li>
         <li class="tab-btn" onclick="showSection('sec-settings', this)"><i class="fas fa-bullhorn"></i> Ad Settings</li>
         <li><a href="{{ url_for('admin_logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -1777,7 +1754,6 @@ admin_html = """
     
     <div class="content-area">
         
-        <!-- DASHBOARD -->
         <div id="sec-dashboard" class="admin-section active">
             <h2><i class="fas fa-tachometer-alt"></i> At a Glance</h2>
             <div class="dashboard-stats">
@@ -1788,18 +1764,11 @@ admin_html = """
             </div>
         </div>
 
-        <!-- NEW ADVANCED AUTO FETCH UPCOMING (AJAX BASED - NON BLOCKING) -->
         <div id="sec-upcoming-fetch" class="admin-section">
             <h2><i class="fas fa-magic"></i> Live Bulk Fetch Content</h2>
             <fieldset>
                 <legend>Fetch Country Wise Content Live</legend>
-                <p style="color:#aaa; font-size:0.9rem;">এখান থেকে আপনি কোনো দেশ এবং ক্যাটাগরি সিলেক্ট করে একসাথে অনেক মুভি/সিরিজ/ড্রামা লোড করতে পারবেন। লাইভ গ্রিডে দেখতে পাবেন কি কি এড হচ্ছে এবং সার্ভার স্লো হবে না।</p>
-                
-                <div class="form-group">
-                    <label>Select Year:</label>
-                    <input type="number" id="live_fetch_year" value="2025" required>
-                </div>
-                
+                <div class="form-group"><label>Select Year:</label><input type="number" id="live_fetch_year" value="2025" required></div>
                 <div class="form-group">
                     <label>Select Country (Origin):</label>
                     <select id="live_fetch_country">
@@ -1815,7 +1784,6 @@ admin_html = """
                         <option value="PK">Pakistan 🇵🇰</option>
                     </select>
                 </div>
-
                 <div class="form-group">
                     <label>Content Type:</label>
                     <select id="live_fetch_type">
@@ -1824,25 +1792,18 @@ admin_html = """
                         <option value="drama">Dramas (TV Shows genre 18)</option>
                     </select>
                 </div>
-
                 <div class="form-group">
                     <label>Number of Pages to Scan (1 page = 20 items):</label>
                     <input type="number" id="live_fetch_pages" value="5" min="1" max="100">
-                    <small style="color:#00E599;">উদাহরণ: ৫ দিলে ১০০টি চেক করে ডেটাবেসে আনবে।</small>
                 </div>
-                
                 <button type="button" id="start_live_fetch_btn" class="btn btn-primary" onclick="startLiveBulkFetch()">
                     <i class="fas fa-cloud-download-alt"></i> Start Live Fetch
                 </button>
                 <span id="live_fetch_status" style="margin-left:15px; font-weight:bold; color:#E50914;"></span>
-                
-                <div class="live-fetch-grid" id="live_fetch_grid_container">
-                    <!-- Live Fetched items will appear here like a grid -->
-                </div>
+                <div class="live-fetch-grid" id="live_fetch_grid_container"></div>
             </fieldset>
         </div>
         
-        <!-- ADD CONTENT -->
         <div id="sec-add" class="admin-section">
             <h2><i class="fas fa-plus-circle"></i> Add New Content</h2>
             <fieldset><legend>Search TMDB / IMDb</legend><div class="form-group"><div class="tmdb-fetcher"><input type="text" id="tmdb_search_query" placeholder="Name or IMDb ID (e.g. tt1234567)"><button type="button" id="tmdb_search_btn" class="btn btn-primary" onclick="searchTmdb()">Search</button></div></div></fieldset>
@@ -1853,30 +1814,19 @@ admin_html = """
                     <div class="form-group"><label>Poster URL:</label><input type="url" name="poster" id="poster"></div>
                     <div class="form-group"><label>Backdrop URL:</label><input type="url" name="backdrop" id="backdrop"></div>
                     <div class="form-group"><label>Overview:</label><textarea name="overview" id="overview"></textarea></div>
-                    
-                    <div class="form-group">
-                        <label>Release Date:</label>
-                        <input type="date" name="release_date" id="release_date">
-                        <small style="color:#00E599;">যদি রিলিজ ডেট আজকের তারিখের চেয়ে বেশি হয় (ভবিষ্যতের তারিখ), তবে অটোমেটিক আপকামিং (Upcoming) লিস্টে থাকবে।</small>
-                    </div>
-
+                    <div class="form-group"><label>Release Date:</label><input type="date" name="release_date" id="release_date"></div>
                     <div class="form-group">
                         <label>Language:</label>
                         <select name="language" id="language">
                             <option value="">Select Language...</option>
-                            {% for lang in predefined_languages %}
-                            <option value="{{ lang }}">{{ lang }}</option>
-                            {% endfor %}
+                            {% for lang in predefined_languages %}<option value="{{ lang }}">{{ lang }}</option>{% endfor %}
                         </select>
                     </div>
-
                     <div class="form-group"><label>Genres (comma-separated):</label><input type="text" name="genres" id="genres"></div>
-                    
                     <div class="form-group">
                         <label>Is Copyright Content?</label>
                         <label style="font-weight:normal; display:flex; align-items:center; gap:5px;"><input type="checkbox" name="is_copyright" value="1" style="width:auto;"> Yes, mark as Copyright</label>
                     </div>
-
                     <div class="form-group"><label>Categories:</label><div class="checkbox-group">{% for cat in predefined_categories %}<label><input type="checkbox" name="categories" value="{{ cat }}"> {{ cat }}</label>{% endfor %}</div></div>
                     <div class="form-group"><label>Content Type:</label><select name="content_type" id="content_type" onchange="toggleFields()"><option value="movie">Movie</option><option value="series">Series</option></select></div>
                 </fieldset>
@@ -1909,7 +1859,6 @@ admin_html = """
             </form>
         </div>
 
-        <!-- MANAGE CONTENT (GRID VIEW) -->
         <div id="sec-manage" class="admin-section">
             <div class="manage-content-header">
                 <h2><i class="fas fa-tasks"></i> Manage Content</h2>
@@ -1922,12 +1871,11 @@ admin_html = """
             
             <form method="post" id="bulk-action-form">
                 <input type="hidden" name="form_action" value="bulk_delete">
-                <p style="color: #999; margin-bottom: 10px;"><i class="fas fa-info-circle"></i> উপরের টিক বক্সে টিক দিয়ে একসাথে সব মুভি ডিলেট করতে পারবেন।</p>
                 <button type="submit" class="btn btn-danger" style="margin-bottom: 15px;" onclick="return confirm('Are you sure you want to delete all selected items?')"><i class="fas fa-trash-alt"></i> Delete Selected</button>
                 
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; background:var(--dark-gray); padding:10px; border-radius:5px;">
                     <input type="checkbox" id="select-all" title="Select All" style="width:20px; height:20px; cursor:pointer;">
-                    <label for="select-all" style="margin:0; cursor:pointer; font-weight:bold;">Select All (সকল মুভি সিলেক্ট করুন)</label>
+                    <label for="select-all" style="margin:0; cursor:pointer; font-weight:bold;">Select All</label>
                 </div>
 
                 <div class="admin-movie-grid">
@@ -1956,7 +1904,6 @@ admin_html = """
                 <button type="submit" class="btn btn-danger" style="margin-top: 15px;" onclick="return confirm('Are you sure you want to delete all selected items?')"><i class="fas fa-trash-alt"></i> Delete Selected</button>
             </form>
             
-            <!-- ADMIN PAGINATION -->
             {% if pagination and pagination.total_pages > 1 %}
             <div class="pagination-admin">
                 {% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}&search={{ request.args.get('search','') }}">&laquo; Prev</a>{% endif %}
@@ -1972,7 +1919,6 @@ admin_html = """
             {% endif %}
         </div>
 
-        <!-- REQUESTS -->
         <div id="sec-requests" class="admin-section">
             <h2><i class="fas fa-inbox"></i> Manage Requests</h2>
             <div class="table-container">
@@ -1994,7 +1940,6 @@ admin_html = """
             </div>
         </div>
 
-        <!-- CATEGORIES WITH SELECT, EDIT, DELETE -->
         <div id="sec-categories" class="admin-section">
             <h2><i class="fas fa-tags"></i> Category Management</h2>
             <div style="display:flex; flex-wrap:wrap; gap:30px; align-items:flex-start;">
@@ -2039,7 +1984,6 @@ admin_html = """
             </div>
         </div>
         
-        <!-- LANGUAGES WITH SELECT, EDIT, DELETE -->
         <div id="sec-languages" class="admin-section">
             <h2><i class="fas fa-language"></i> Language Management</h2>
             <div style="display:flex; flex-wrap:wrap; gap:30px; align-items:flex-start;">
@@ -2071,10 +2015,10 @@ admin_html = """
                                 <tr>
                                     <td><input type="checkbox" name="selected_langs" value="{{ lang }}" class="lang-checkbox"></td>
                                     <td>{{ lang }}</td>
-                                    <th style="text-align:right;">
+                                    <td style="text-align:right;">
                                         <button type="button" class="btn btn-edit btn-sm" onclick="editLanguage('{{ lang }}')">Edit</button>
                                         <a href="{{ url_for('delete_language', lang_name=lang) }}" class="btn btn-danger btn-sm" onclick="return confirm('Delete this language?')">Del</a>
-                                    </th>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -2084,7 +2028,6 @@ admin_html = """
             </div>
         </div>
 
-        <!-- POPUP & NOTIFICATIONS CONFIG -->
         <div id="sec-popup" class="admin-section">
             <h2><i class="fas fa-bell"></i> Popup & Push Notifications</h2>
             <form method="post">
@@ -2093,12 +2036,10 @@ admin_html = """
                 <fieldset><legend>Auto Push Notifications</legend>
                     <div class="form-group">
                         <label><input type="checkbox" name="noti_enabled" value="1" style="width:auto;" {% if noti_settings.enabled %}checked{% endif %}> Enable Web Push Notifications</label>
-                        <small style="color:#00E599; display:block;">Users will automatically be asked to allow notifications when visiting the site.</small>
                     </div>
                     <div class="form-group">
                         <label>Notification Delay Cycle (Minutes):</label>
                         <input type="number" name="noti_delay_minutes" value="{{ noti_settings.delay_minutes | default(60) }}" min="1">
-                        <small style="color:#aaa;">Every X minutes, the system will pick a movie from your site and push a notification to the users. (Default 60 min)</small>
                     </div>
                 </fieldset>
 
@@ -2108,16 +2049,13 @@ admin_html = """
                     </div>
                     <div class="form-group"><label>Popup Title:</label><input type="text" name="popup_title" value="{{ popup_settings.title | default('') }}"></div>
                     <div class="form-group"><label>Popup Message:</label><textarea name="popup_message" rows="4">{{ popup_settings.message | default('') }}</textarea></div>
-                    <div class="form-group"><label>Telegram Link For Popup (Optional):</label><input type="url" name="popup_tg_url" value="{{ popup_settings.tg_url | default('') }}">
-                    <small style="color:#00E599;">If you put a link here, a Telegram Join button will appear inside the popup.</small></div>
-                    <div class="form-group"><label>Auto Hide Timer (seconds):</label><input type="number" name="popup_auto_hide" value="{{ popup_settings.auto_hide | default(0) }}" min="0">
-                    <small style="color:#00E599;">Set to 0 to disable auto-hide. User will have to close manually using the cross button.</small></div>
+                    <div class="form-group"><label>Telegram Link For Popup (Optional):</label><input type="url" name="popup_tg_url" value="{{ popup_settings.tg_url | default('') }}"></div>
+                    <div class="form-group"><label>Auto Hide Timer (seconds):</label><input type="number" name="popup_auto_hide" value="{{ popup_settings.auto_hide | default(0) }}" min="0"></div>
                 </fieldset>
                 <button type="submit" class="btn btn-primary" onclick="localStorage.setItem('activeAdminTab', 'sec-popup')"><i class="fas fa-save"></i> Save All Settings</button>
             </form>
         </div>
 
-        <!-- SITE & TELEGRAM CONFIG -->
         <div id="sec-siteconfig" class="admin-section">
             <h2><i class="fas fa-cogs"></i> Site & Blur Settings</h2>
             <form method="post">
@@ -2155,9 +2093,8 @@ admin_html = """
             </form>
         </div>
 
-        <!-- DOWNLOAD STEP & SECONDS SETTINGS MENU -->
         <div id="sec-download-steps" class="admin-section">
-            <h2><i class="fas fa-歩"></i> Download Steps & Timer Settings</h2>
+            <h2><i class="fas fa-list-ol"></i> Download Steps & Timer Settings</h2>
             <form method="post">
                 <input type="hidden" name="form_action" value="update_download_steps">
                 <fieldset>
@@ -2173,7 +2110,7 @@ admin_html = """
                                 <input type="number" name="step_id[]" value="{{ step.step_id }}" readonly style="background:#111;">
                             </div>
                             <div class="form-group">
-                                <label>Step Seconds (タイマー):</label>
+                                <label>Step Seconds:</label>
                                 <input type="number" name="step_seconds[]" value="{{ step.seconds }}" min="0" required>
                             </div>
                             <div class="form-group">
@@ -2189,7 +2126,6 @@ admin_html = """
             </form>
         </div>
         
-        <!-- TELEGRAM BOT AUTO POST CONFIG -->
         <div id="sec-telegram-bot" class="admin-section">
             <h2><i class="fab fa-telegram"></i> Telegram Auto Post</h2>
             <form method="post">
@@ -2211,26 +2147,22 @@ admin_html = """
                     <div class="form-group">
                         <label>Auto Post Old Movies Every (Minutes):</label>
                         <input type="number" name="auto_post_interval" value="{{ tg_bot_config.auto_post_interval | default(0) }}" min="0">
-                        <small style="color:#00E599;">কত মিনিট পর পর নিজে থেকে র‍্যান্ডম মুভি চ্যানেলে পোস্ট হবে। ০ দিলে অটো পোস্ট বন্ধ থাকবে।</small>
                     </div>
                     <div class="form-group">
                         <label>Auto Delete Posts After (Minutes):</label>
                         <input type="number" name="auto_delete_interval" value="{{ tg_bot_config.auto_delete_interval | default(0) }}" min="0">
-                        <small style="color:#00E599;">বটের করা পোস্টগুলো কত মিনিট পর চ্যানেল থেকে ডিলিট হয়ে যাবে। ০ দিলে ডিলিট হবে না।</small>
                     </div>
                 </fieldset>
                 <button type="submit" class="btn btn-primary" onclick="localStorage.setItem('activeAdminTab', 'sec-telegram-bot')"><i class="fas fa-save"></i> Save Telegram Settings</button>
             </form>
         </div>
         
-        <!-- SETTINGS -->
         <div id="sec-settings" class="admin-section">
             <h2><i class="fas fa-bullhorn"></i> Advertisement & Settings</h2>
             <form method="post">
                 <input type="hidden" name="form_action" value="update_ads">
                 
                 <fieldset><legend>Anywhere Click Ads (Unlimited Popunder)</legend>
-                    <p style="color:#aaa; font-size:0.9rem;">খালি জায়গা, পোস্টার বা বাটনে ক্লিক করলেই এই অ্যাড একটি <b>নতুন ট্যাবে (New Tab)</b> ওপেন হবে। আর বর্তমান পেজটি সরাসরি তার লিংকে (মুভি বা ডাউনলোড) চলে যাবে। একাধিক লিংক দিলে প্রতিবার র্যান্ডম অ্যাড আসবে। <b>কোনো লিমিট নেই, প্রতি ক্লিকেই অ্যাড আসবে।</b></p>
                     <div id="popunder_links_container">
                         {% if ad_settings.popunder_links %}
                             {% for link in ad_settings.popunder_links %}
@@ -2257,7 +2189,6 @@ admin_html = """
     </div>
 </div>
 
-<!-- HIDDEN FORMS FOR EDITING CATEGORY AND LANGUAGE -->
 <form id="edit-cat-form" method="post" style="display:none;">
     <input type="hidden" name="form_action" value="edit_category">
     <input type="hidden" name="old_name" id="edit-cat-old">
@@ -2524,34 +2455,19 @@ edit_html = """
         <div class="form-group"><label>Poster URL:</label><input type="url" name="poster" value="{{ movie.poster or '' }}"></div>
         <div class="form-group"><label>Backdrop URL:</label><input type="url" name="backdrop" value="{{ movie.backdrop or '' }}"></div>
         <div class="form-group"><label>Overview:</label><textarea name="overview">{{ movie.overview or '' }}</textarea></div>
-        
-        <div class="form-group">
-            <label>Release Date:</label>
-            <input type="date" name="release_date" id="release_date" value="{{ movie.release_date or '' }}">
-        </div>
-
+        <div class="form-group"><label>Release Date:</label><input type="date" name="release_date" id="release_date" value="{{ movie.release_date or '' }}"></div>
         <div class="form-group">
             <label>Language:</label>
             <select name="language" id="language">
                 <option value="">Select Language...</option>
-                {% for lang in predefined_languages %}
-                <option value="{{ lang }}" {% if movie.language == lang %}selected{% endif %}>{{ lang }}</option>
-                {% endfor %}
+                {% for lang in predefined_languages %}<option value="{{ lang }}" {% if movie.language == lang %}selected{% endif %}>{{ lang }}</option>{% endfor %}
             </select>
         </div>
-
         <div class="form-group"><label>Genres:</label><input type="text" name="genres" value="{{ movie.genres|join(', ') if movie.genres else '' }}"></div>
-        
         <div class="form-group">
             <label>Is Copyright Content?</label>
             <label style="font-weight:normal; display:flex; align-items:center; gap:5px;"><input type="checkbox" name="is_copyright" value="1" style="width:auto;" {% if movie.is_copyright %}checked{% endif %}> Yes, mark as Copyright</label>
         </div>
-
-        <div class="form-group">
-            <label>Force Upcoming?</label>
-            <label style="font-weight:normal; display:flex; align-items:center; gap:5px;"><input type="checkbox" name="is_upcoming" value="1" style="width:auto;" {% if movie.is_upcoming %}checked{% endif %}> Yes, force keep in Upcoming List</label>
-        </div>
-
         <div class="form-group"><label>Categories:</label><div class="checkbox-group">{% for cat in predefined_categories %}<label><input type="checkbox" name="categories" value="{{ cat }}" {% if movie.categories and cat in movie.categories %}checked{% endif %}> {{ cat }}</label>{% endfor %}</div></div>
         <div class="form-group"><label>Content Type:</label><select name="content_type" id="content_type" onchange="toggleFields()"><option value="movie" {% if movie.type == 'movie' %}selected{% endif %}>Movie</option><option value="series" {% if movie.type == 'series' %}selected{% endif %}>Series</option></select></div>
     </fieldset>
@@ -2599,7 +2515,6 @@ edit_html = """
         <label style="color:#00E599; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; gap:10px;">
             <input type="checkbox" name="send_tg_post" value="1" style="width:20px; height:20px;"> Send Telegram Auto Post to Channel (Update)
         </label>
-        <small style="color:#aaa;">If ticked, an updated notification for this content will be posted to your Telegram channel.</small>
     </div>
                 
     <button type="submit" class="btn btn-primary" onclick="localStorage.setItem('activeAdminTab', 'sec-manage')"><i class="fas fa-save"></i> Update Content</button>
@@ -2644,10 +2559,6 @@ class Pagination:
     def prev_num(self): return self.page - 1
     @property
     def next_num(self): return self.page + 1
-
-# =======================================================================================
-# === [START] FLASK ROUTES ==============================================================
-# =======================================================================================
 
 @app.before_request
 def check_upcoming_movies():
@@ -2870,7 +2781,6 @@ def admin():
                 "c_text_light": request.form.get("c_text_light")
             }
             settings.update_one({"_id": "site_config"}, {"$set": site_config_data}, upsert=True)
-            # Sync to poster blur config for seconds compatibility
             settings.update_one({"_id": "poster_blur_config"}, {"$set": {"enabled": True, "seconds": auto_blur_min * 60}}, upsert=True)
             
         elif form_action == "update_download_steps":
@@ -2957,8 +2867,8 @@ def admin():
             release_date = request.form.get("release_date", "").strip()
             tmdb_id = request.form.get("tmdb_id", "").strip()
             
-            is_upcoming = bool(request.form.get("is_upcoming"))
-            if release_date and not is_upcoming:
+            is_upcoming = False
+            if release_date:
                 today_str = date.today().strftime("%Y-%m-%d")
                 if release_date > today_str:
                     is_upcoming = True
@@ -3090,10 +3000,10 @@ def edit_movie(movie_id):
     if request.method == "POST":
         content_type = request.form.get("content_type")
         is_copyright = bool(request.form.get("is_copyright"))
-        
         release_date = request.form.get("release_date", "").strip()
-        is_upcoming = bool(request.form.get("is_upcoming"))
-        if release_date and not is_upcoming:
+        
+        is_upcoming = False
+        if release_date:
             today_str = date.today().strftime("%Y-%m-%d")
             if release_date > today_str:
                 is_upcoming = True
