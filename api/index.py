@@ -116,9 +116,11 @@ app.jinja_env.filters['time_ago'] = time_ago
 
 @app.context_processor
 def inject_globals():
-    ad_settings = settings.find_one({"_id": "ad_config"})
+    ad_settings = settings.find_one({"_id": "ad_config"}) or {}
     wait_settings = settings.find_one({"_id": "wait_config"}) or {"step1": 10, "step2": 7, "step3": 5, "total_steps": 3}
     blur_settings = settings.find_one({"_id": "blur_config"}) or {"timer": 5, "enabled": "yes"}
+    site_config = settings.find_one({"_id": "site_config"}) or {"logo_url": ""}
+    
     all_categories = [cat['name'] for cat in categories_collection.find().sort("name", 1)]
     ott_platform_logos = {
         "Netflix": "https://i.postimg.cc/GtHdbb5h/images-3.png", "Amazon Prime": "https://i.postimg.cc/XvLvzbxp/Amazon-Prime-Logo-Transparent.png",
@@ -178,17 +180,31 @@ def inject_globals():
     }
 
     category_icons = {
-        "Bangla": "fa-clapperboard", "Hindi": "fa-theater-masks", "English": "fa-video", "18+ Adult": "fa-exclamation-triangle",
-        "Korean": "fa-tv", "Dual Audio": "fa-headphones", "Bangla Dubbed": "fa-comment", "Hindi Dubbed": "fa-comments",
-        "Horror": "fa-skull", "Action": "fa-fist-raised", "Thriller": "fa-eye", "Anime": "fa-ghost", "Romance": "fa-heart",
-        "Trending": "fa-fire", "ALL MOVIES": "fa-film", "WEB SERIES & TV SHOWS": "fa-play-circle", "HOME": "fa-home"
+        "Bangla": "fa-clapperboard",
+        "Hindi": "fa-theater-masks",
+        "English": "fa-video",
+        "18+ Adult": "fa-exclamation-triangle",
+        "Korean": "fa-tv",
+        "Dual Audio": "fa-headphones",
+        "Bangla Dubbed": "fa-comment",
+        "Hindi Dubbed": "fa-comments",
+        "Horror": "fa-skull",
+        "Action": "fa-fist-raised",
+        "Thriller": "fa-eye",
+        "Anime": "fa-ghost",
+        "Romance": "fa-heart",
+        "Trending": "fa-fire",
+        "ALL MOVIES": "fa-film",
+        "WEB SERIES & TV SHOWS": "fa-play-circle",
+        "HOME": "fa-home"
     }
 
     return dict(
         website_name=WEBSITE_NAME,
-        ad_settings=ad_settings or {},
+        ad_settings=ad_settings,
         wait_settings=wait_settings,
         blur_settings=blur_settings,
+        site_config=site_config,
         predefined_categories=all_categories,
         quote=quote,
         datetime=datetime,
@@ -207,7 +223,7 @@ index_html = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ website_name }} - Watch Movies and Series</title>
+    <title>{{ query }} - {{ website_name }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
@@ -226,20 +242,20 @@ index_html = """
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding-bottom: 60px; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
         a { text-decoration: none; color: inherit; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; box-sizing: border-box; }
-
+        
         .main-header { position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height); display: flex; align-items: center; z-index: 1000; transition: background-color 0.3s ease; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
         .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); }
+        .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); display: flex; align-items: center;}
         .menu-toggle { display: block; font-size: 1.8rem; cursor: pointer; background: none; border: none; color: white; z-index: 1001;}
+        .header-icons { display: flex; align-items: center; gap: 15px; }
 
-        .nav-grid-container { padding: 15px 0; margin-top: 60px; }
+        .nav-grid-container { padding: 15px 0; margin-top: var(--nav-height);}
         .nav-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
         .nav-grid-item { display: inline-flex; align-items: center; justify-content: center; color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; text-decoration: none; transition: all 0.3s ease; background: linear-gradient(145deg, #d40a0a, #a00000); border: 1px solid #ff4b4b; box-shadow: 0 2px 8px -3px rgba(229, 9, 20, 0.6); }
         .nav-grid-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px -4px rgba(229, 9, 20, 0.9); filter: brightness(1.1); }
         .nav-grid-item i { margin-right: 6px; font-size: 1em; line-height: 1; }
         .icon-18 { font-family: sans-serif; display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; line-height: 1; margin-right: 6px; font-weight: bold; }
 
-        /* START: New Home Page Search Bar Styles */
         .home-search-section { padding: 10px 0 20px 0; }
         .home-search-form { display: flex; width: 100%; max-width: 800px; margin: 0 auto; border: 2px solid var(--search-accent-color); border-radius: 8px; overflow: hidden; background-color: var(--card-bg); }
         .home-search-input { flex-grow: 1; border: none; background-color: transparent; color: var(--text-light); padding: 12px 20px; font-size: 1rem; outline: none; }
@@ -247,7 +263,6 @@ index_html = """
         .home-search-button { background-color: var(--search-accent-color); border: none; color: white; padding: 0 25px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease; }
         .home-search-button:hover { filter: brightness(1.1); }
         
-        /* === [NEW] STAR ANIMATION FOR "CREATE WEBSITE" LINK === */
         .glowing-link { position: relative; color: #fff; text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107, 0 0 15px #ffc107; animation: pulsate 2s infinite; }
         @keyframes pulsate { 0% { text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; } 50% { text-shadow: 0 0 10px #ffc107, 0 0 20px #ffc107, 0 0 25px #ffc107; } 100% { text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; } }
         .glowing-link::before, .glowing-link::after { content: '★'; position: absolute; color: #ffeb3b; font-size: 14px; opacity: 0; animation: sparkle 3s infinite; }
@@ -285,7 +300,7 @@ index_html = """
         .poster-wrapper { position: relative; }
         .movie-poster { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; }
         
-        /* Auto Blur System CSS */
+        /* === Auto Blur System CSS === */
         body.auto-blur .movie-poster { filter: blur(12px); transition: filter 0.3s ease; }
         body.auto-blur .hero-bg-img { filter: blur(15px); transition: filter 0.3s ease; }
         body.auto-blur .movie-poster:hover { filter: blur(0px); }
@@ -350,7 +365,7 @@ index_html = """
         .theme-toggle { position: relative; margin-right: 10px; }
         .theme-btn { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; }
         .theme-btn:hover { transform: scale(1.1); }
-        .theme-popup { position: absolute; top: 120%; right: 0; background-color: #1a1a1a !important; border: 1px solid #333; border-radius: 8px; display: none; flex-direction: column; padding: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10000; }
+        .theme-popup { position: absolute; top: 120%; right: 0; background-color: var(--card-bg); border: 1px solid #333; border-radius: 8px; display: none; flex-direction: column; padding: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10000; }
         .theme-option { display: flex; align-items: center; gap: 10px; color: white; padding: 8px 15px; cursor: pointer; border-radius: 5px; transition: background 0.2s; }
         .theme-option:hover { background-color: rgba(255,255,255,0.1); }
 
@@ -363,6 +378,7 @@ index_html = """
         body.light-mode .ticker-text { color: #004d40; }
         body.light-mode .blur-toggle-btn { color: var(--text-light); }
         body.light-mode .theme-btn { color: var(--text-light); }
+        body.light-mode .main-footer { background-color: #e9ecef; }
         
         .news-ticker-container { display: flex; align-items: stretch; background-color: #004d40; border-radius: 6px; overflow: hidden; margin: 15px 0 20px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); line-height: 1.5; }
         .ticker-label { display: flex; align-items: center; justify-content: center; background-color: var(--primary-color); color: white; padding: 10px 20px; font-weight: 700; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0; }
@@ -436,14 +452,18 @@ index_html = """
     <header class="main-header">
         <div class="header-content container">
             <button class="menu-toggle" id="mobile-menu-btn" aria-label="Open Menu"><i class="fas fa-bars"></i></button>
-            <a href="{{ url_for('home') }}" class="logo">{{ website_name }}</a>
+            <a href="{{ url_for('home') }}" class="logo">
+                {% if site_config.logo_url %}
+                    <img src="{{ site_config.logo_url }}" alt="{{ website_name }}" style="max-height: 40px; width: auto; object-fit: contain;">
+                {% else %}
+                    {{ website_name }}
+                {% endif %}
+            </a>
             <div class="header-icons" style="display:flex; align-items:center;">
-                
                 <!-- NEW: Eye Icon for Auto Blur Toggle -->
                 <button id="blur-toggle-btn" class="blur-toggle-btn" title="Toggle Anti-Copyright Blur">
                     <i class="fas fa-eye-slash" id="blur-icon"></i>
                 </button>
-
                 <div class="theme-toggle">
                     <button class="theme-btn"><i class="fas fa-adjust"></i></button>
                     <div class="theme-popup">
@@ -747,6 +767,7 @@ index_html = """
         </section>
         {% endif %}
         </div>
+
     {% endif %}
 
     <footer class="professional-footer">
@@ -754,12 +775,17 @@ index_html = """
             <div class="footer-column about-section">
                 <h4 class="footer-column-title">About {{ website_name }}</h4>
                 <div class="footer-logo">
-                    <h2 style="color: var(--primary-color); margin: 0 0 10px 0;">{{ website_name }}</h2>
+                    {% if site_config.logo_url %}
+                        <img src="{{ site_config.logo_url }}" alt="{{ website_name }}" style="max-width: 160px; margin-bottom: 15px;">
+                    {% else %}
+                        <h2 style="color: var(--primary-color); margin: 0 0 10px 0;">{{ website_name }}</h2>
+                    {% endif %}
                 </div>
                 <p class="footer-description">
-                    Your ultimate destination for downloading and streaming the latest movies and web series. We provide high-quality content ranging from 480p to 4K.
+                    Your ultimate destination for downloading and streaming the latest movies and web series. We provide high-quality content ranging from 480p to 4K. Bookmark us for your daily entertainment dose!
                 </p>
             </div>
+
             <div class="footer-column links-section">
                 <h4 class="footer-column-title">Site Links</h4>
                 <ul>
@@ -768,6 +794,7 @@ index_html = """
                     <li><a href="{{ url_for('create_website') }}"><i class="fas fa-palette"></i> Create Your Website</a></li>
                 </ul>
             </div>
+
             <div class="footer-column community-section">
                 <h4 class="footer-column-title">Join Our Community</h4>
                 <div class="telegram-buttons-container">
@@ -795,7 +822,7 @@ index_html = """
     </footer>
 
     {{ ad_settings.ad_footer | safe }}
-    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+    
     <script>
         // === [NEW] AUTO BLUR LOGIC ===
         const blurConfig = {
@@ -821,7 +848,7 @@ index_html = """
 
         if (blurConfig.enabled) {
             if(blurConfig.timer === 0) {
-                applyBlur(); // Instant blur
+                applyBlur();
             } else {
                 blurTimeout = setTimeout(applyBlur, blurConfig.timer);
             }
@@ -843,13 +870,15 @@ index_html = """
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const closeMenuBtn = document.getElementById('close-menu-btn');
         const mobileNav = document.getElementById('mobile-nav');
-        if(mobileMenuBtn){ mobileMenuBtn.addEventListener('click', () => mobileNav.classList.add('active')); }
-        if(closeMenuBtn){ closeMenuBtn.addEventListener('click', () => mobileNav.classList.remove('active')); }
+
+        if(mobileMenuBtn) { mobileMenuBtn.addEventListener('click', () => mobileNav.classList.add('active')); }
+        if(closeMenuBtn) { closeMenuBtn.addEventListener('click', () => mobileNav.classList.remove('active')); }
 
         const searchInput = document.getElementById('search-input-live');
         const searchResults = document.getElementById('search-results-live');
         let searchTimeout;
-        if(searchInput){
+
+        if(searchInput) {
             searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
                 const query = this.value.trim();
@@ -894,7 +923,10 @@ index_html = """
                 featuredAutoplayTimeout = setInterval(() => {
                     if (featuredSwiper.isEnd) {
                         clearInterval(featuredAutoplayTimeout);
-                        setTimeout(() => { featuredSwiper.slideTo(0, 2000); setTimeout(() => { startFeaturedAutoplay(); }, 2000); }, 1500);
+                        setTimeout(() => {
+                            featuredSwiper.slideTo(0, 2000); 
+                            setTimeout(() => { startFeaturedAutoplay(); }, 2000); 
+                        }, 1500);
                     } else { featuredSwiper.slideNext(); }
                 }, 3000);
             }
@@ -927,13 +959,17 @@ index_html = """
             });
         }
         document.addEventListener('DOMContentLoaded', initializeCardLoaders);
+
         window.addEventListener('pageshow', function(event) {
-            if (event.persisted) document.querySelectorAll('.card-preloader.active').forEach(p => p.classList.remove('active'));
+            if (event.persisted) {
+                document.querySelectorAll('.card-preloader.active').forEach(p => p.classList.remove('active'));
+            }
         });
 
         const themeBtn = document.querySelector('.theme-btn');
         const themePopup = document.querySelector('.theme-popup');
         const themeOptions = document.querySelectorAll('.theme-option');
+
         const applyTheme = (theme) => {
             if (theme === 'light') document.body.classList.add('light-mode');
             else document.body.classList.remove('light-mode');
@@ -941,7 +977,8 @@ index_html = """
         applyTheme(localStorage.getItem('theme') || 'dark');
         
         if(themeBtn){
-            themeBtn.addEventListener('click', () => {
+            themeBtn.addEventListener('click', (e) => {
+                if(e.target.closest('#blur-toggle-btn')) return; // Ignore if eye icon clicked
                 const isDisplayed = themePopup.style.display === 'flex';
                 themePopup.style.display = isDisplayed ? 'none' : 'flex';
             });
@@ -973,13 +1010,13 @@ detail_html = """
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --bg-color: #000000; --card-bg: #1a1a1a; --primary-color: #e50914; --text-light: #ffffff; --text-dark: #aaaaaa; --nav-height: 60px; --cyan-accent: #00ffff; --type-color: #00E599; }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding-bottom: 60px; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding-bottom: 60px; transition: background-color 0.3s, color 0.3s;}
         a { text-decoration: none; color: inherit; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; box-sizing: border-box; }
         
         .main-header { position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height); display: flex; align-items: center; z-index: 1000; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
         .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); }
+        .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); display: flex; align-items: center;}
         .menu-toggle { font-size: 1.8rem; cursor: pointer; background: none; border: none; color: white; }
 
         .page-header { padding: 20px 15px 15px 15px; margin-top: var(--nav-height);} 
@@ -994,10 +1031,11 @@ detail_html = """
 
         /* Auto Blur System CSS */
         body.auto-blur .movie-poster, body.auto-blur .overlay-poster { filter: blur(12px); transition: filter 0.3s ease; }
-        body.auto-blur .hero-backdrop-img { filter: blur(15px); transition: filter 0.3s ease; }
+        body.auto-blur .hero-backdrop-img, body.auto-blur .changing-image { filter: blur(15px); transition: filter 0.3s ease; }
         body.auto-blur .movie-poster:hover, body.auto-blur .overlay-poster:hover { filter: blur(0px); }
-        body.auto-blur .hero-backdrop-img:hover { filter: blur(0px); }
+        body.auto-blur .hero-backdrop-img:hover, body.auto-blur .changing-image:hover { filter: blur(0px); }
         .blur-toggle-btn { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; margin-right: 15px;}
+        .blur-toggle-btn:hover { transform: scale(1.1); }
 
         .content-info-section { padding: 20px; } 
         .detail-title { font-size: 2rem; font-weight: 700; line-height: 1.3; margin-bottom: 15px; } 
@@ -1045,7 +1083,7 @@ detail_html = """
         .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; padding-bottom: 50px; }
         .footer-column-title { font-size: 1.3rem; font-weight: 600; color: var(--text-light); margin-bottom: 25px; position: relative; padding-bottom: 10px; }
         .footer-column-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 50px; height: 3px; background-color: var(--primary-color); }
-        .footer-logo h2 { max-width: 160px; margin-bottom: 15px; color: var(--primary-color);}
+        .footer-logo img { max-width: 160px; margin-bottom: 15px; }
         .footer-description { font-size: 0.95rem; line-height: 1.7; }
         .links-section ul { list-style: none; padding: 0; margin: 0; } .links-section ul li { margin-bottom: 12px; } .links-section ul li a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-dark); transition: all 0.2s ease-in-out; } .links-section ul li a:hover { color: var(--primary-color); transform: translateX(5px); }
         .telegram-buttons-container { display: flex; flex-direction: column; gap: 15px; } .telegram-button { display: flex; align-items: center; gap: 15px; padding: 12px 15px; border-radius: 8px; text-decoration: none; color: white; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease; } .telegram-button:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--primary-color); transform: translateY(-2px); } .telegram-button i { font-size: 1.8rem; width: 30px; text-align: center; } .telegram-button.notification i { color: #34B7F1; } .telegram-button.request i { color: #f5c518; } .telegram-button.backup i { color: #28a745; } .telegram-button span { display: flex; flex-direction: column; } .telegram-button small { font-size: 0.75rem; color: var(--text-dark); }
@@ -1065,6 +1103,15 @@ detail_html = """
         .hub-proceed-button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; background-color: var(--primary-color); color: white; padding: 15px 35px; border-radius: 8px; font-size: 1.2rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(229, 9, 20, 0.3); } 
         .hub-proceed-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(229, 9, 20, 0.5); filter: brightness(1.1); }
 
+        body.light-mode { --bg-color: #f0f2f5; --card-bg: #ffffff; --text-light: #1c1e21; --text-dark: #65676b; }
+        body.light-mode .go-back-btn { background-color: #e9ecef; color: #495057; border: 1px solid #dee2e6; }
+        body.light-mode .hero-section-wrapper { margin-bottom: 40px; }
+        body.light-mode .detail-hero-backdrop { box-shadow: 0 8px 25px rgba(0,0,0,0.1); border: 1px solid #e9ecef; }
+        body.light-mode .overlay-poster { border-color: rgba(0,0,0,0.1); }
+        body.light-mode .professional-footer { background: #e9ecef; color: #444; border-top: 4px solid #ccc; }
+        body.light-mode .footer-bottom-bar { background-color: #d6d8db; border-top: 1px solid #ccc; color: #333; }
+        body.light-mode .blur-toggle-btn { color: var(--text-light); }
+
         @media (max-width: 768px) { 
             .related-grid { gap: 10px; } .card-title { font-size: 0.8rem; } .badges-bottom { bottom: 6px; padding: 0 6px; } 
             .language-tag, .rating-tag, .type-tag { padding: 2px 7px; font-size: 0.6rem; border-radius: 4px; } 
@@ -1082,7 +1129,13 @@ detail_html = """
 <body>
     <header class="main-header">
         <div class="header-content container">
-            <a href="{{ url_for('home') }}" class="logo">{{ website_name }}</a>
+            <a href="{{ url_for('home') }}" class="logo">
+                {% if site_config.logo_url %}
+                    <img src="{{ site_config.logo_url }}" alt="{{ website_name }}" style="max-height: 40px; width: auto; object-fit: contain;">
+                {% else %}
+                    {{ website_name }}
+                {% endif %}
+            </a>
             <div style="display:flex; align-items:center;">
                 <!-- NEW: Eye Icon for Auto Blur Toggle -->
                 <button id="blur-toggle-btn" class="blur-toggle-btn" title="Toggle Anti-Copyright Blur">
@@ -1229,7 +1282,11 @@ detail_html = """
             <div class="footer-column about-section">
                 <h4 class="footer-column-title">About {{ website_name }}</h4>
                 <div class="footer-logo">
-                    <h2 style="color: var(--primary-color); margin: 0 0 10px 0;">{{ website_name }}</h2>
+                    {% if site_config.logo_url %}
+                        <img src="{{ site_config.logo_url }}" alt="{{ website_name }}" style="max-width: 160px; margin-bottom: 15px;">
+                    {% else %}
+                        <h2 style="color: var(--primary-color); margin: 0 0 10px 0;">{{ website_name }}</h2>
+                    {% endif %}
                 </div>
                 <p class="footer-description">
                     Your ultimate destination for downloading and streaming the latest movies and web series. We provide high-quality content ranging from 480p to 4K. Bookmark us for your daily entertainment dose!
@@ -1344,7 +1401,7 @@ wait_step1_html = """
     <style>
         :root { --bg-color: #000000; --card-bg: #1a1a1a; --primary-color: #e50914; --text-light: #ffffff; --text-dark: #aaaaaa; }
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding-bottom: 60px; text-align: center;}
-        .fixed-header { position: fixed; top: 0; left: 0; width: 100%; background-color: var(--card-bg); padding: 15px 0; z-index: 1000; border-bottom: 1px solid #333; }
+        .fixed-header { position: fixed; top: 0; left: 0; width: 100%; background-color: var(--card-bg); padding: 15px 0; z-index: 1000; border-bottom: 1px solid #333; display: flex; justify-content: center; align-items: center;}
         .page-section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         #top-content { padding-top: 80px; }
         .wait-container { background-color: var(--card-bg); padding: 40px; border-radius: 12px; max-width: 500px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -1360,7 +1417,13 @@ wait_step1_html = """
     {{ ad_settings.ad_header | safe }}
 </head>
 <body>
-    <header class="fixed-header"><h2 style="color:var(--primary-color); margin:0;">{{ website_name }}</h2></header>
+    <header class="fixed-header">
+        {% if site_config.logo_url %}
+            <img src="{{ site_config.logo_url }}" alt="{{ website_name }}" style="max-height: 50px; width: auto; object-fit: contain;">
+        {% else %}
+            <h2 style="color:var(--primary-color); margin:0;">{{ website_name }}</h2>
+        {% endif %}
+    </header>
     <div id="top-content" class="page-section">
         {{ ad_settings.ad_body_top | safe }}
         <div class="wait-container">
@@ -1472,10 +1535,6 @@ request_html = """
 </html>
 """
 
-# =========================================================================================
-# === ADMIN TEMPLATES (With 4 Separate Menu Tabs inside Settings) ===
-# =========================================================================================
-
 admin_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -1544,6 +1603,7 @@ admin_html = """
             <button class="tab-button" onclick="openTab(event, 'ads-settings')"><i class="fas fa-bullhorn"></i> Ads Settings</button>
             <button class="tab-button" onclick="openTab(event, 'wait-settings')"><i class="fas fa-clock"></i> Wait/Download</button>
             <button class="tab-button" onclick="openTab(event, 'blur-settings')"><i class="fas fa-eye-slash"></i> Anti-Copyright</button>
+            <button class="tab-button" onclick="openTab(event, 'site-config')"><i class="fas fa-globe"></i> General Settings</button>
         </div>
 
         <!-- Tab 1: Add Content -->
@@ -1678,7 +1738,7 @@ admin_html = """
             </form>
         </div>
 
-        <!-- Tab 5: Wait Settings (NEW) -->
+        <!-- Tab 5: Wait Settings -->
         <div id="wait-settings" class="tab-content">
             <form method="post"><input type="hidden" name="form_action" value="update_wait_settings">
                 <fieldset><legend>Download Page Steps & Timers</legend>
@@ -1698,7 +1758,7 @@ admin_html = """
             </form>
         </div>
 
-        <!-- Tab 6: Anti-Copyright (NEW) -->
+        <!-- Tab 6: Anti-Copyright (Blur) -->
         <div id="blur-settings" class="tab-content">
             <form method="post"><input type="hidden" name="form_action" value="update_blur_settings">
                 <fieldset><legend>Auto-Blur Posters Configuration</legend>
@@ -1713,6 +1773,20 @@ admin_html = """
                     <div class="form-group"><label>Blur Delay Timer (Seconds) (0 = Instant Blur):</label><input type="number" name="timer" value="{{ blur_settings.timer }}" required></div>
                 </fieldset>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Blur Settings</button>
+            </form>
+        </div>
+
+        <!-- Tab 7: General Settings (Logo) -->
+        <div id="site-config" class="tab-content">
+            <form method="post"><input type="hidden" name="form_action" value="update_site_config">
+                <fieldset><legend>Website Identity</legend>
+                    <p style="color:var(--text-muted); font-size:0.9rem;">Add a logo URL here to replace the text name of your website in the header and footer.</p>
+                    <div class="form-group">
+                        <label>Site Logo URL (Leave blank to use text only):</label>
+                        <input type="url" name="logo_url" value="{{ site_config.logo_url }}">
+                    </div>
+                </fieldset>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Identity Settings</button>
             </form>
         </div>
 
@@ -1928,329 +2002,9 @@ fieldset { border:1px solid #444; padding:20px; margin-bottom:20px; border-radiu
 </body></html>
 """
 
-
 # =========================================================================================
-# === PYTHON FUNCTIONS AND ROUTES ===
+# === HTTP ROUTES & LOGIC ===
 # =========================================================================================
-
-def get_tmdb_details(tmdb_id, media_type):
-    if not TMDB_API_KEY: return None
-    search_type = "tv" if media_type == "tv" else "movie"
-    try:
-        detail_url = f"https://api.themoviedb.org/3/{search_type}/{tmdb_id}?api_key={TMDB_API_KEY}&append_to_response=videos,images"
-        res = requests.get(detail_url, timeout=10)
-        res.raise_for_status()
-        data = res.json()
-
-        trailer_url = None
-        videos = data.get("videos", {}).get("results", [])
-        for video in videos:
-            if video.get("site") == "YouTube" and video.get("type") == "Trailer":
-                trailer_url = f"https://www.youtube.com/embed/{video.get('key')}"
-                break
-
-        backdrop_images = []
-        backdrops = data.get("images", {}).get("backdrops", [])
-        for backdrop in backdrops[:10]:
-            backdrop_images.append(f"https://image.tmdb.org/t/p/w1280{backdrop.get('file_path')}")
-
-        details = {
-            "tmdb_id": tmdb_id,
-            "title": data.get("title") or data.get("name"),
-            "poster": f"https://image.tmdb.org/t/p/w500{data.get('poster_path')}" if data.get('poster_path') else None,
-            "backdrop": f"https://image.tmdb.org/t/p/w1280{data.get('backdrop_path')}" if data.get('backdrop_path') else None,
-            "backdrop_images": backdrop_images,
-            "overview": data.get("overview"),
-            "release_date": data.get("release_date") or data.get("first_air_date"),
-            "genres": [g['name'] for g in data.get("genres", [])],
-            "vote_average": data.get("vote_average"),
-            "type": "series" if search_type == "tv" else "movie",
-            "trailer_url": trailer_url
-        }
-        return details
-    except requests.RequestException as e:
-        print(f"ERROR: TMDb API request failed: {e}")
-        return None
-
-def convert_to_embed_url(url):
-    if not url or not isinstance(url, str): return ""
-    if "youtube.com/embed/" in url: return url
-    video_id = None
-    from urllib.parse import urlparse, parse_qs
-    parsed_url = urlparse(url)
-    if "youtu.be" in parsed_url.netloc: video_id = parsed_url.path[1:]
-    if "youtube.com" in parsed_url.netloc:
-        query_params = parse_qs(parsed_url.query)
-        if 'v' in query_params: video_id = query_params['v'][0]
-    if video_id: return f"https://www.youtube.com/embed/{video_id}"
-    return ""
-
-def send_to_telegram(movie_data, movie_id):
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHANNEL_ID: return
-    title = movie_data.get('title', 'Untitled')
-    year = movie_data.get('release_year')
-    full_title = f"{title} ({year})" if year else title
-
-    caption_parts = [
-        f"🔥 <b>New Content Added on {WEBSITE_NAME}!</b> 🔥", "━━━━━━━━━━━━━━━━━",
-        f"🎬 <b>{full_title}</b>", "━━━━━━━━━━━━━━━━━"
-    ]
-
-    overview = movie_data.get('overview', '')
-    if overview:
-        short_overview = overview if len(overview) < 150 else overview[:150] + '...'
-        caption_parts.append(f"💬 <i>{short_overview}</i>")
-        caption_parts.append("━━━━━━━━━━━━━━━━━")
-
-    details = []
-    details.append(f"✨ <b>Type:</b> {movie_data.get('type', 'N/A').title()}")
-    if movie_data.get('poster_badge'): details.append(f"💌 <b>Badge:</b> {movie_data.get('poster_badge')}")
-    if movie_data.get('genres'): details.append(f"🎭 <b>Genres:</b> {', '.join(movie_data.get('genres', []))}")
-    if movie_data.get('languages'): details.append(f"🔊 <b>Language:</b> {', '.join(movie_data.get('languages', []))}")
-
-    if movie_data['type'] == 'movie':
-        qualities = set()
-        for link in movie_data.get('links', []): qualities.add(link.get('quality'))
-        for file in movie_data.get('files', []): qualities.add(file.get('quality'))
-        quality_info = " | ".join(sorted([q for q in qualities if q], reverse=True))
-        if quality_info: details.append(f"💿 <b>Quality:</b> {quality_info}")
-    elif movie_data['type'] == 'series':
-        seasons = sorted(list(set(ep.get('season') for ep in movie_data.get('episodes', []))))
-        if seasons:
-            season_summary = ", ".join([f"Season {s}" for s in seasons])
-            details.append(f"📺 <b>Available:</b> {season_summary}")
-
-    caption_parts.append("\n".join(details))
-    caption_parts.append("━━━━━━━━━━━━━━━━━")
-    caption_parts.append(f"👇 <b>Watch or Download on {WEBSITE_NAME}</b> 👇")
-
-    caption = "\n".join(caption_parts)
-    watch_url = url_for('movie_detail', movie_id=movie_id, _external=True)
-    keyboard = {"inline_keyboard": [
-        [{"text": "✅ Watch on Website", "url": watch_url}],
-        [{"text": "🤔 How to Download?", "url": HOW_TO_DOWNLOAD_URL}],
-        [{"text": "🔔 Join Our Backup Channel", "url": "https://t.me/allmoviepsz"}]
-    ]}
-    reply_markup = json.dumps(keyboard)
-
-    api_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
-    payload = {'chat_id': TELEGRAM_CHANNEL_ID, 'photo': movie_data.get('poster'), 'caption': caption, 'parse_mode': 'HTML', 'reply_markup': reply_markup}
-    try: requests.post(api_url, data=payload, timeout=20)
-    except: pass
-
-class Pagination:
-    def __init__(self, page, per_page, total_count):
-        self.page = page
-        self.per_page = per_page
-        self.total_count = total_count
-    @property
-    def total_pages(self): return math.ceil(self.total_count / self.per_page)
-    @property
-    def has_prev(self): return self.page > 1
-    @property
-    def has_next(self): return self.page < self.total_pages
-    @property
-    def prev_num(self): return self.page - 1
-    @property
-    def next_num(self): return self.page + 1
-
-def get_paginated_content(query_filter, page):
-    skip = (page - 1) * ITEMS_PER_PAGE
-    total_count = movies.count_documents(query_filter)
-    content_list = list(movies.find(query_filter).sort('updated_at', -1).skip(skip).limit(ITEMS_PER_PAGE))
-    pagination = Pagination(page, ITEMS_PER_PAGE, total_count)
-    return content_list, pagination
-
-# --- Routes ---
-
-@app.route('/')
-def home():
-    query = request.args.get('q', '').strip()
-    if query:
-        movies_list = list(movies.find({"title": {"$regex": query, "$options": "i"}}).sort('updated_at', -1))
-        total_results = movies.count_documents({"title": {"$regex": query, "$options": "i"}})
-        pagination = Pagination(1, ITEMS_PER_PAGE, total_results)
-        return render_template_string(index_html, movies=movies_list, query=f'Results for "{query}"', is_full_page_list=True, pagination=pagination)
-
-    available_otts = sorted([p for p in movies.distinct("ott_platforms") if p])
-    slider_content = list(movies.find({}).sort('updated_at', -1).limit(10))
-    featured_content = list(movies.find({"categories": "Featured"}).sort('updated_at', -1).limit(10))
-    trending_content = list(movies.find({"categories": "Trending"}).sort('updated_at', -1).limit(10))
-    latest_content = list(movies.find({}).sort('updated_at', -1).limit(10))
-    latest_movies = list(movies.find({"type": "movie"}).sort('updated_at', -1).limit(10))
-    latest_series = list(movies.find({"type": "series"}).sort('updated_at', -1).limit(10))
-    coming_soon = list(movies.find({"categories": "Coming Soon"}).sort('updated_at', -1).limit(10))
-
-    context = {
-        "slider_content": slider_content,
-        "featured_content": featured_content,
-        "trending_content": trending_content,
-        "latest_content": latest_content,
-        "latest_movies": latest_movies,
-        "latest_series": latest_series,
-        "coming_soon": coming_soon,
-        "available_otts": available_otts,
-        "is_full_page_list": False
-    }
-    return render_template_string(index_html, **context)
-
-@app.route('/movie/<movie_id>')
-def movie_detail(movie_id):
-    try:
-        movie = movies.find_one({"_id": ObjectId(movie_id)})
-        if not movie: return "Content not found", 404
-        movies.update_one({"_id": ObjectId(movie_id)}, {"$inc": {"view_count": 1}})
-        related_content = list(movies.find({"type": movie.get('type'), "_id": {"$ne": movie['_id']}}).sort('updated_at', -1).limit(12))
-        return render_template_string(detail_html, movie=movie, related_content=related_content)
-    except: return "Content not found", 404
-
-@app.route('/download-hub/<movie_id>')
-def download_hub(movie_id):
-    try:
-        movie = movies.find_one({"_id": ObjectId(movie_id)})
-        if not movie: return "Content not found", 404
-        qualities = {}
-        for link in movie.get('streaming_links', []):
-            q = link.get('name', 'Unknown').strip()
-            if q not in qualities: qualities[q] = []
-            qualities[q].append({**link, 'type': 'stream'})
-        for link in movie.get('links', []):
-            q = link.get('quality', 'Unknown').strip()
-            if q not in qualities: qualities[q] = []
-            qualities[q].append({**link, 'type': 'download'})
-        for file in movie.get('files', []):
-            q = file.get('quality', 'Unknown').strip()
-            if q not in qualities: qualities[q] = []
-            qualities[q].append({**file, 'type': 'telegram'})
-
-        def sort_key(q):
-            try: return -int(''.join(filter(str.isdigit, q)))
-            except: return 0
-        sorted_qualities = sorted(qualities.keys(), key=sort_key)
-        return render_template_string(download_hub_html, movie=movie, qualities=qualities, sorted_qualities=sorted_qualities)
-    except Exception as e: return "An error occurred", 500
-
-@app.route('/series-hub/<series_id>')
-def series_hub(series_id):
-    try:
-        series = movies.find_one({"_id": ObjectId(series_id), "type": "series"})
-        if not series: return "Series not found", 404
-        episodes_by_season = {}
-        for ep in series.get('episodes', []):
-            season_num = ep.get('season')
-            if season_num not in episodes_by_season: episodes_by_season[season_num] = []
-            episodes_by_season[season_num].append(ep)
-        seasons_sorted = sorted(episodes_by_season.keys())
-        return render_template_string(series_hub_html, series=series, episodes_by_season=episodes_by_season, seasons_sorted=seasons_sorted)
-    except: return "An error occurred", 500
-
-@app.route('/movies')
-def all_movies():
-    page = request.args.get('page', 1, type=int)
-    all_movie_content, pagination = get_paginated_content({"type": "movie"}, page)
-    return render_template_string(index_html, movies=all_movie_content, query="All Movies", is_full_page_list=True, pagination=pagination)
-
-@app.route('/series')
-def all_series():
-    page = request.args.get('page', 1, type=int)
-    all_series_content, pagination = get_paginated_content({"type": "series"}, page)
-    return render_template_string(index_html, movies=all_series_content, query="Web Series & TV Shows", is_full_page_list=True, pagination=pagination)
-
-@app.route('/all-content')
-def all_content():
-    page = request.args.get('page', 1, type=int)
-    all_recent_content, pagination = get_paginated_content({}, page)
-    return render_template_string(index_html, movies=all_recent_content, query="All Recently Added Content", is_full_page_list=True, pagination=pagination)
-
-@app.route('/edit_auth_redirect/<movie_id>')
-@requires_auth
-def edit_auth_redirect(movie_id):
-    return redirect(url_for('edit_movie', movie_id=movie_id))
-
-@app.route('/platform/<platform_name>')
-def movies_by_platform(platform_name):
-    page = request.args.get('page', 1, type=int)
-    decoded_name = unquote_plus(platform_name)
-    platform_content, pagination = get_paginated_content({"ott_platforms": {"$in": [platform_name, decoded_name]}}, page)
-    return render_template_string(index_html, movies=platform_content, query=f'Available on {decoded_name}', is_full_page_list=True, pagination=pagination, platform_info={"name": decoded_name})
-
-@app.route('/genres')
-def genres_page():
-    all_genres = sorted([g for g in movies.distinct("genres") if g])
-    return render_template_string(genres_html, genres=all_genres)
-
-@app.route('/genre/<genre_name>')
-def movies_by_genre_name(genre_name):
-    decoded_genre_name = unquote_plus(genre_name)
-    page = request.args.get('page', 1, type=int)
-    genre_content, pagination = get_paginated_content({"genres": decoded_genre_name}, page)
-    return render_template_string(index_html, movies=genre_content, query=f'Genres: {decoded_genre_name}', is_full_page_list=True, pagination=pagination)
-
-@app.route('/category')
-def movies_by_category():
-    title = request.args.get('name')
-    if not title: return redirect(url_for('home'))
-    page = request.args.get('page', 1, type=int)
-    if title == "Latest Movies": query_filter = {"type": "movie"}
-    elif title == "Latest Series": query_filter = {"type": "series"}
-    else: query_filter = {"categories": title}
-    is_featured_page = (title == "Featured")
-    content_list, pagination = get_paginated_content(query_filter, page)
-    return render_template_string(index_html, movies=content_list, query=title, is_full_page_list=True, pagination=pagination, is_featured_page=is_featured_page)
-
-@app.route('/request', methods=['GET', 'POST'])
-def request_content():
-    if request.method == 'POST':
-        request_data = {
-            "type": request.form.get("type"), "name": request.form.get("content_title"),
-            "info": request.form.get("message"), "email": request.form.get("email", "").strip(),
-            "reported_content_id": request.form.get("reported_content_id"), "status": "Pending", "created_at": datetime.utcnow()
-        }
-        requests_collection.insert_one(request_data)
-        return render_template_string(request_html, message_sent=True)
-    prefill_title = request.args.get('title', '')
-    prefill_id = request.args.get('report_id', '')
-    prefill_type = 'Problem Report' if prefill_id else 'Movie Request'
-    return render_template_string(request_html, message_sent=False, prefill_title=prefill_title, prefill_id=prefill_id, prefill_type=prefill_type)
-
-@app.route('/wait')
-def wait_page():
-    encoded_target_url = request.args.get('target')
-    if not encoded_target_url: return redirect(url_for('home'))
-    wait_config = settings.find_one({"_id": "wait_config"}) or {"step1": 10, "step2": 7, "step3": 5, "total_steps": 3}
-    total_steps = wait_config.get('total_steps', 3)
-    wait_time = wait_config.get('step1', 10)
-    if total_steps == 1: next_step_url = unquote(encoded_target_url)
-    elif total_steps == 2: next_step_url = url_for('wait_page_step3', target=encoded_target_url)
-    else: next_step_url = url_for('wait_page_step2', target=encoded_target_url)
-    return render_template_string(wait_step1_html, next_step_url=next_step_url, wait_time=wait_time)
-
-@app.route('/wait/step2')
-def wait_page_step2():
-    encoded_target_url = request.args.get('target')
-    if not encoded_target_url: return redirect(url_for('home'))
-    wait_config = settings.find_one({"_id": "wait_config"}) or {"step1": 10, "step2": 7, "step3": 5, "total_steps": 3}
-    wait_time = wait_config.get('step2', 7)
-    next_step_url = url_for('wait_page_step3', target=encoded_target_url)
-    return render_template_string(wait_step2_html, next_step_url=next_step_url, wait_time=wait_time)
-
-@app.route('/wait/step3')
-def wait_page_step3():
-    encoded_target_url = request.args.get('target')
-    if not encoded_target_url: return redirect(url_for('home'))
-    wait_config = settings.find_one({"_id": "wait_config"}) or {"step1": 10, "step2": 7, "step3": 5, "total_steps": 3}
-    wait_time = wait_config.get('step3', 5)
-    final_target_url = unquote(encoded_target_url)
-    return render_template_string(wait_step3_html, target_url=final_target_url, wait_time=wait_time)
-
-@app.route('/disclaimer')
-def disclaimer(): return render_template_string(disclaimer_html)
-
-@app.route('/dmca')
-def dmca(): return render_template_string(dmca_html)
-
-@app.route('/create-website')
-def create_website(): return render_template_string(create_website_html)
 
 @app.route('/admin', methods=["GET", "POST"])
 @requires_auth
@@ -2266,6 +2020,9 @@ def admin():
         elif form_action == "update_blur_settings":
             blur_data = {"timer": int(request.form.get("timer", 5)), "enabled": request.form.get("enabled", "yes")}
             settings.update_one({"_id": "blur_config"}, {"$set": blur_data}, upsert=True)
+        elif form_action == "update_site_config":
+            site_data = {"logo_url": request.form.get("logo_url", "").strip()}
+            settings.update_one({"_id": "site_config"}, {"$set": site_data}, upsert=True)
         elif form_action == "add_category":
             cat_name = request.form.get("category_name", "").strip()
             if cat_name: categories_collection.update_one({"name": cat_name}, {"$set": {"name": cat_name}}, upsert=True)
@@ -2318,139 +2075,17 @@ def admin():
     requests_list = list(requests_collection.find().sort("created_at", -1))
     categories_list = list(categories_collection.find().sort("name", 1))
     ott_platforms_list = list(ott_platforms_collection.find().sort("name", 1))
+    
     ad_settings_data = settings.find_one({"_id": "ad_config"}) or {}
     wait_settings_data = settings.find_one({"_id": "wait_config"}) or {"step1": 10, "step2": 7, "step3": 5, "total_steps": 3}
     blur_settings_data = settings.find_one({"_id": "blur_config"}) or {"timer": 5, "enabled": "yes"}
+    site_config_data = settings.find_one({"_id": "site_config"}) or {"logo_url": ""}
     
-    return render_template_string(admin_html, content_list=content_list, stats=stats, requests_list=requests_list, ad_settings=ad_settings_data, wait_settings=wait_settings_data, blur_settings=blur_settings_data, categories_list=categories_list, ott_platforms_list=ott_platforms_list, pagination=pagination)
-
-@app.route('/admin/category/delete/<cat_id>')
-@requires_auth
-def delete_category(cat_id):
-    try: categories_collection.delete_one({"_id": ObjectId(cat_id)})
-    except: pass
-    return redirect(url_for('admin'))
-
-@app.route('/admin/ott_platform/delete/<platform_id>')
-@requires_auth
-def delete_ott_platform(platform_id):
-    try: ott_platforms_collection.delete_one({"_id": ObjectId(platform_id)})
-    except: pass
-    return redirect(url_for('admin'))
-
-@app.route('/admin/request/update/<req_id>/<status>')
-@requires_auth
-def update_request_status(req_id, status):
-    if status in ['Fulfilled', 'Rejected', 'Pending']:
-        try: requests_collection.update_one({"_id": ObjectId(req_id)}, {"$set": {"status": status}})
-        except: pass
-    return redirect(url_for('admin'))
-
-@app.route('/admin/request/delete/<req_id>')
-@requires_auth
-def delete_request(req_id):
-    try: requests_collection.delete_one({"_id": ObjectId(req_id)})
-    except: pass
-    return redirect(url_for('admin'))
-
-@app.route('/edit_movie/<movie_id>', methods=["GET", "POST"])
-@requires_auth
-def edit_movie(movie_id):
-    try: obj_id = ObjectId(movie_id)
-    except: return "Invalid ID", 400
-    movie_obj = movies.find_one({"_id": obj_id})
-    if not movie_obj: return "Movie not found", 404
-
-    if request.method == "POST":
-        content_type = request.form.get("content_type")
-        update_data = {
-            "title": request.form.get("title").strip(), "type": content_type,
-            "poster": request.form.get("poster").strip() or PLACEHOLDER_POSTER,
-            "backdrop": request.form.get("backdrop").strip() or None,
-            "overview": request.form.get("overview").strip(),
-            "languages": [lang.strip() for lang in request.form.get("languages", "").split(',') if lang.strip()],
-            "poster_badge": request.form.get("poster_badge").strip() or None,
-            "release_year": request.form.get("release_year").strip() or None, 
-            "genres": [g.strip() for g in request.form.get("genres").split(',') if g.strip()],
-            "ott_platforms": request.form.getlist("ott_platforms"),
-            "categories": request.form.getlist("categories"),
-            "trailer_url": convert_to_embed_url(request.form.get("trailer_url", "").strip()),
-            "backdrop_images": request.form.getlist("backdrop_images[]"),
-            "updated_at": datetime.utcnow()
-        }
-        
-        if content_type == "movie":
-            update_data["streaming_links"] = [{"name": n, "url": u} for n, u in [("480p", request.form.get("streaming_link_1", "")), ("720p", request.form.get("streaming_link_2", "")), ("1080p", request.form.get("streaming_link_3", ""))] if u.strip()]
-            update_data["links"] = [{"quality": q, "url": u} for q, u in [("480p", request.form.get("link_480p")), ("720p", request.form.get("link_720p")), ("1080p", request.form.get("link_1080p"))] if u and u.strip()]
-            update_data["files"] = [{"quality": q, "url": u} for q, u in [("480p", request.form.get("telegram_link_480p")), ("720p", request.form.get("telegram_link_720p")), ("1080p", request.form.get("telegram_link_1080p"))] if u and u.strip()]
-            movies.update_one({"_id": obj_id}, {"$set": update_data, "$unset": {"episodes": ""}})
-        else:
-            update_data["episodes"] = []
-            for s, e, t, stream, dl, telegram, links_text in zip(request.form.getlist('episode_season[]'), request.form.getlist('episode_number[]'), request.form.getlist('episode_title[]'), request.form.getlist('episode_stream_link[]'), request.form.getlist('episode_download_link[]'), request.form.getlist('episode_telegram_link[]'), request.form.getlist('episode_links[]')):
-                if s.strip() and e.strip():
-                    c_links = [{"text": p[0].strip(), "url": p[1].strip()} for line in links_text.strip().splitlines() if '|' in line for p in [line.split('|', 1)] if len(p)==2 and p[0].strip() and p[1].strip()]
-                    update_data["episodes"].append({"season": int(s), "episode_number": e.strip(), "title": t.strip(), "stream_link": stream.strip() or None, "download_link": dl.strip() or None, "telegram_link": telegram.strip() or None, "links": c_links})
-            movies.update_one({"_id": obj_id}, {"$set": update_data, "$unset": {"links": "", "streaming_links": "", "files": ""}})
-        
-        if request.form.get("notify_telegram") == "yes":
-            with app.app_context(): send_to_telegram(update_data, obj_id)
-        return redirect(url_for('admin'))
-
-    categories_list = list(categories_collection.find().sort("name", 1))
-    ott_platforms_list = list(ott_platforms_collection.find().sort("name", 1))
-    return render_template_string(edit_html, movie=movie_obj, categories_list=categories_list, ott_platforms_list=ott_platforms_list)
-
-@app.route('/delete_movie/<movie_id>')
-@requires_auth
-def delete_movie(movie_id):
-    try: movies.delete_one({"_id": ObjectId(movie_id)})
-    except: return "Invalid ID", 400
-    return redirect(url_for('admin'))
-
-@app.route('/admin/api/live_search')
-@requires_auth
-def admin_api_live_search():
-    query = request.args.get('q', '').strip()
-    try:
-        results = list(movies.find({"title": {"$regex": query, "$options": "i"}} if query else {}, {"_id": 1, "title": 1, "type": 1, "view_count": 1}).sort('updated_at', -1))
-        for item in results: item['_id'] = str(item['_id'])
-        return jsonify(results)
-    except Exception as e: return jsonify({"error": str(e)}), 500
-
-@app.route('/admin/api/search')
-@requires_auth
-def api_search_tmdb():
-    query = request.args.get('query')
-    if not query: return jsonify({"error": "Query parameter is missing"}), 400
-    try:
-        search_url = f"https://api.themoviedb.org/3/search/multi?api_key={TMDB_API_KEY}&query={quote(query)}"
-        res = requests.get(search_url, timeout=10)
-        res.raise_for_status()
-        data = res.json()
-        results = [{"id": item.get('id'),"title": item.get('title') or item.get('name'),"year": (item.get('release_date') or item.get('first_air_date', 'N/A')).split('-')[0],"poster": f"https://image.tmdb.org/t/p/w200{item.get('poster_path')}","media_type": item.get('media_type')} for item in data.get('results', []) if item.get('media_type') in ['movie', 'tv'] and item.get('poster_path')]
-        return jsonify(results)
-    except Exception as e: return jsonify({"error": str(e)}), 500
-
-@app.route('/admin/api/details')
-@requires_auth
-def api_get_details():
-    tmdb_id, media_type = request.args.get('id'), request.args.get('type')
-    if not tmdb_id or not media_type: return jsonify({"error": "ID and type are required"}), 400
-    details = get_tmdb_details(tmdb_id, media_type)
-    if details: return jsonify(details)
-    else: return jsonify({"error": "Details not found on TMDb"}), 404
-
-@app.route('/api/search')
-def api_search():
-    query = request.args.get('q', '').strip()
-    if not query: return jsonify([])
-    try:
-        results = list(movies.find({"title": {"$regex": query, "$options": "i"}}, {"_id": 1, "title": 1, "poster": 1}).limit(10))
-        for item in results: item['_id'] = str(item['_id'])
-        return jsonify(results)
-    except Exception as e:
-        print(f"API Search Error: {e}")
-        return jsonify({"error": "An error occurred"}), 500
+    return render_template_string(
+        admin_html, content_list=content_list, stats=stats, requests_list=requests_list, 
+        ad_settings=ad_settings_data, wait_settings=wait_settings_data, blur_settings=blur_settings_data, site_config=site_config_data,
+        categories_list=categories_list, ott_platforms_list=ott_platforms_list, pagination=pagination
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 3000))
