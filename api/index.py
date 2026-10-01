@@ -1,19 +1,3 @@
-আপনার দেওয়া সমস্ত রিকোয়ারমেন্ট এবং ডিজাইনের প্রতিটি লাইন, ডট ও সেমিকোলন হুবহু
-ঠিক রেখে আমি আপনার সম্পূর্ণ কোডটি আপডেট করেছি।
-
-নতুন যে ফিচারগুলো এড করা হয়েছে: ১. Admin Panel Menu Split: "Site Settings" এর
-ভেতরের মেনুগুলোকে আলাদা করে Category & OTT, Ads Settings, Wait & Download, এবং
-Anti-Copyright নামে ৪টি আলাদা সুন্দর ট্যাবে ভাগ করা হয়েছে। ২. Wait & Download
-Settings: এডমিন প্যানেল থেকে ডাউনলোড পেজের স্টেপ (১, ২ নাকি ৩) এবং প্রতিটি
-স্টেপের সেকেন্ড আলাদা আলাদা কমানো/বাড়ানো যাবে। ৩. Auto-Blur (Anti-Copyright):
-এডমিন প্যানেল থেকে সেট করা সেকেন্ড অনুযায়ী অটোমেটিক মুভি/সিরিজের পোস্টার ব্লার
-হয়ে যাবে। হেডারে একটি "Eye (চোখ)" আইকনের বাটন দেওয়া হয়েছে, যা দিয়ে ইউজার চাইলে
-ব্লার অন/অফ করতে পারবে। পেজ রিলোড দিলে আবার অটো-ব্লার কাজ করবে।
-
-নিচে আপনার সম্পূর্ণ এবং ফাইনাল Python (app.py) কোডটি দেওয়া হলো। আপনি সরাসরি
-আপনার আগের ফাইলের সব কোড মুছে এই কোডটি পেস্ট করতে পারবেন (কোনো কিছু মিসিং হবে
-না):
-
 import os
 import sys
 import requests
@@ -35,13 +19,15 @@ WEBSITE_NAME = os.environ.get("WEBSITE_NAME", "All Movie Prz")
 
 # --- START: NEW TELEGRAM SETTINGS ---
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8374125089:AAGwBcn-QI0XuzWlfBREXjodLefqcANaldg")
-TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "-1003377987584")
-HOW_TO_DOWNLOAD_URL = os.environ.get("HOW_TO_DOWNLOAD_URL", "https://t.me/howtomoviedownlod")
+TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "-1003377987584") 
+HOW_TO_DOWNLOAD_URL = os.environ.get("HOW_TO_DOWNLOAD_URL", "https://t.me/howtomoviedownlod") 
 # --- END: NEW TELEGRAM SETTINGS ---
 
+# --- Validate Environment Variables ---
 if not all([MONGO_URI, TMDB_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD]):
     print("FATAL: One or more required environment variables are missing.")
-    if os.environ.get('VERCEL') != '1': sys.exit(1)
+    if os.environ.get('VERCEL') != '1':
+        sys.exit(1)
 
 # --- App Initialization ---
 PLACEHOLDER_POSTER = "https://via.placeholder.com/400x600.png?text=Poster+Not+Found"
@@ -103,7 +89,8 @@ try:
 
 except Exception as e:
     print(f"FATAL: Error connecting to MongoDB: {e}.")
-    if os.environ.get('VERCEL') != '1': sys.exit(1)
+    if os.environ.get('VERCEL') != '1':
+        sys.exit(1)
 
 # --- Custom Jinja Filter for Relative Time ---
 def time_ago(obj_id):
@@ -113,7 +100,8 @@ def time_ago(obj_id):
     diff = now - post_time
     seconds = diff.total_seconds()
 
-    if seconds < 60: return "just now"
+    if seconds < 60:
+        return "just now"
     elif seconds < 3600:
         minutes = int(seconds / 60)
         return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
@@ -208,440 +196,10 @@ def inject_globals():
         ott_platform_logos=ott_platform_logos
     )
 
+
 # =========================================================================================
 # === [START] HTML TEMPLATES ==============================================================
 # =========================================================================================
-
-base_css_js = """
-<style>
-    :root {
-        --bg-color: #000000;
-        --card-bg: #1a1a1a;
-        --primary-color: #e50914;
-        --text-light: #ffffff;
-        --text-dark: #aaaaaa;
-        --nav-height: 60px;
-        --cyan-accent: #00ffff;
-        --search-accent-color: #00bcd4;
-        --type-color: #00E599;
-    }
-    body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding-bottom: 60px; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
-    a { text-decoration: none; color: inherit; }
-    .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; box-sizing: border-box; }
-    
-    .main-header { position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height); display: flex; align-items: center; z-index: 1000; transition: background-color 0.3s ease; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
-    .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-    .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); }
-    .menu-toggle { display: block; font-size: 1.8rem; cursor: pointer; background: none; border: none; color: white; z-index: 1001;}
-    .header-icons { display: flex; align-items: center; gap: 15px; }
-
-    .nav-grid-container { padding: 15px 0; margin-top: var(--nav-height); }
-    .nav-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-    .nav-grid-item { display: inline-flex; align-items: center; justify-content: center; color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; text-decoration: none; transition: all 0.3s ease; background: linear-gradient(145deg, #d40a0a, #a00000); border: 1px solid #ff4b4b; box-shadow: 0 2px 8px -3px rgba(229, 9, 20, 0.6); }
-    .nav-grid-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px -4px rgba(229, 9, 20, 0.9); filter: brightness(1.1); }
-    .nav-grid-item i { margin-right: 6px; font-size: 1em; line-height: 1; }
-    .icon-18 { font-family: sans-serif; display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; line-height: 1; margin-right: 6px; font-weight: bold; }
-
-    .home-search-section { padding: 10px 0 20px 0; }
-    .home-search-form { display: flex; width: 100%; max-width: 800px; margin: 0 auto; border: 2px solid var(--search-accent-color); border-radius: 8px; overflow: hidden; background-color: var(--card-bg); }
-    .home-search-input { flex-grow: 1; border: none; background-color: transparent; color: var(--text-light); padding: 12px 20px; font-size: 1rem; outline: none; }
-    .home-search-input::placeholder { color: var(--text-dark); }
-    .home-search-button { background-color: var(--search-accent-color); border: none; color: white; padding: 0 25px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease; }
-    .home-search-button:hover { filter: brightness(1.1); }
-
-    .create-website-section { text-align: center; padding: 50px 20px; margin-top: 40px; background-color: var(--card-bg); }
-    .create-website-section h2 { font-size: 2rem; font-weight: 700; margin-bottom: 20px; }
-    .glowing-link { position: relative; color: #fff; text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107, 0 0 15px #ffc107; animation: pulsate 2s infinite; display: inline-block; padding: 15px 35px; border: 2px solid #ffc107; border-radius: 50px; font-size: 1.3rem; font-weight: 600; transition: all 0.3s ease; }
-    .glowing-link:hover { background-color: #ffc107; color: var(--bg-color); text-shadow: none; transform: scale(1.05); }
-    @keyframes pulsate { 0% { text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; } 50% { text-shadow: 0 0 10px #ffc107, 0 0 20px #ffc107, 0 0 25px #ffc107; } 100% { text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; } }
-    .glowing-link::before, .glowing-link::after { content: '★'; position: absolute; color: #ffeb3b; font-size: 14px; opacity: 0; animation: sparkle 3s infinite; }
-    .glowing-link::before { top: -5px; left: -20px; animation-delay: 0.5s; }
-    .glowing-link::after { bottom: -5px; right: -20px; animation-delay: 1.5s; }
-    @keyframes sparkle { 0%, 100% { transform: scale(0.5); opacity: 0; } 25%, 75% { transform: scale(1.2); opacity: 1; } 50% { transform: scale(0.8); opacity: 0.5; } }
-
-    @keyframes cyan-glow { 0% { box-shadow: 0 0 15px 2px #00D1FF; } 50% { box-shadow: 0 0 25px 6px #00D1FF; } 100% { box-shadow: 0 0 15px 2px #00D1FF; } }
-    .hero-slider-section { margin-bottom: 30px; }
-    .hero-slider { width: 100%; aspect-ratio: 16 / 9; background-color: var(--card-bg); border-radius: 12px; overflow: hidden; animation: cyan-glow 5s infinite linear; }
-    .hero-slider .swiper-slide { position: relative; display: block; }
-    .hero-slider .hero-bg-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-    .hero-slider .hero-slide-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.5) 40%, transparent 70%); z-index: 2; }
-    .hero-slider .hero-slide-content { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; z-index: 3; color: white; }
-    .hero-slider .hero-title { font-size: 1.5rem; font-weight: 700; margin: 0 0 5px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
-    .hero-slider .hero-meta { font-size: 0.9rem; margin: 0; color: var(--text-dark); }
-    .hero-slide-content .hero-type-tag { position: absolute; bottom: 20px; right: 20px; background: linear-gradient(45deg, #00FFA3, #00D1FF); color: black; padding: 5px 15px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; z-index: 4; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0, 255, 163, 0.2); }
-    .hero-slider .swiper-pagination { position: absolute; bottom: 10px !important; left: 20px !important; width: auto !important; }
-    .hero-slider .swiper-pagination-bullet { background: rgba(255, 255, 255, 0.5); width: 8px; height: 8px; opacity: 0.7; transition: all 0.2s ease; }
-    .hero-slider .swiper-pagination-bullet-active { background: var(--text-light); width: 24px; border-radius: 5px; opacity: 1; }
-
-    .category-section { margin: 30px 0; }
-    .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .category-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 20px; padding-left: 15px; border-left: 5px solid var(--primary-color); line-height: 1.2; }
-    .view-all-link { font-size: 0.9rem; color: var(--text-dark); font-weight: 500; padding: 6px 15px; border-radius: 20px; background-color: #222; transition: all 0.3s ease; animation: pulse-glow 2.5s ease-in-out infinite; }
-    .category-grid, .full-page-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-
-    .movie-card { display: flex; flex-direction: column; border-radius: 8px; overflow: hidden; background-color: var(--card-bg); border: 2px solid transparent; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .movie-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 255, 255, 0.2); }
-    .poster-wrapper { position: relative; }
-    .movie-poster { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; }
-    
-    /* Auto-Blur Post Styles */
-    body.blur-posters .movie-poster { filter: blur(10px); transition: filter 0.3s ease; }
-    body.blur-posters .hero-bg-img { filter: blur(15px); transition: filter 0.3s ease; }
-    body.blur-posters .movie-poster:hover { filter: blur(0); } /* Hover to see clear */
-
-    .card-preloader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); z-index: 5; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); border-radius: 8px; transition: opacity 0.2s; }
-    .card-preloader.active { display: flex; }
-    .play-button-loader-small { width: 60px; height: 60px; border: 4px solid rgba(255, 255, 255, 0.4); border-top-color: #fff; border-radius: 50%; position: relative; animation: spin 1s ease-in-out infinite; }
-    .play-button-loader-small::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 0; height: 0; border-style: solid; border-width: 15px 0 15px 25px; border-color: transparent transparent transparent white; margin-left: 4px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .card-info { padding: 10px; background-color: var(--card-bg); }
-    .card-title { font-size: 0.9rem; font-weight: 500; color: var(--text-light); margin: 0 0 5px 0; line-height: 1.4; min-height: 2.8em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    
-    .badges-top, .badges-bottom { position: absolute; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; z-index: 2; pointer-events: none; }
-    .badges-top { top: 0; }
-    .badges-bottom { bottom: 8px; padding: 0 8px; }
-    .badge-group-left, .badge-group-right { display: flex; gap: 6px; pointer-events: all; align-items: center; }
-    .badges-top .badge-group-right { padding-right: 8px; }
-    
-    .language-tag, .rating-tag, .type-tag { padding: 4px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 6px; color: white; display: inline-flex; align-items: center; gap: 4px; }
-    .language-tag { background-color: rgba(0, 0, 0, 0.7); }
-    .rating-tag { background-color: rgba(245, 197, 24, 0.9); color: #000; }
-    .type-tag { background-color: #00E599; color: #000; }
-    .new-badge { background-color: var(--primary-color); color: white; font-weight: 700; padding: 4px 12px 4px 8px; font-size: 0.7rem; clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%); }
-    .featured-badge { background-color: #ffc107; color: #000; padding: 4px 12px 4px 8px; font-size: 0.7rem; font-weight: 700; clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%); }
-
-    .full-page-grid-container { padding: 80px 10px 20px; }
-    .full-page-grid-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 20px; text-align: center; }
-    .ad-container { margin: 20px auto; width: 100%; max-width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; min-height: 50px; text-align: center; }
-    .ad-container > * { max-width: 100% !important; }
-
-    .mobile-nav-menu {position: fixed;top: 0;left: 0;width: 100%;height: 100%;background-color: var(--bg-color);z-index: 9999;display: flex;flex-direction: column;align-items: center;justify-content: center;transform: translateX(-100%);transition: transform 0.3s ease-in-out;}
-    .mobile-nav-menu.active {transform: translateX(0);}
-    .mobile-nav-menu .close-btn {position: absolute;top: 20px;right: 20px;font-size: 2.5rem;color: white;background: none;border: none;cursor: pointer;}
-    .mobile-links {display: flex;flex-direction: column;text-align: center;gap: 25px;}
-    .mobile-links a {font-size: 1.5rem;font-weight: 500;color: var(--text-light);transition: color 0.2s;}
-    .mobile-links a:hover {color: var(--primary-color);}
-    .mobile-links hr {width: 50%;border-color: #333;margin: 10px auto;}
-
-    .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background-color: #181818; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); z-index: 1000; justify-content: space-around; align-items: center; padding-top: 5px; }
-    .bottom-nav .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-dark); background: none; border: none; font-size: 12px; flex-grow: 1; font-weight: 500; }
-    .bottom-nav .nav-item i { font-size: 22px; margin-bottom: 5px; }
-    .bottom-nav .nav-item.active, .bottom-nav .nav-item:hover { color: var(--primary-color); }
-
-    .search-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; display: none; flex-direction: column; padding: 20px; }
-    .search-overlay.active { display: flex; }
-    .search-container { width: 100%; max-width: 800px; margin: 0 auto; }
-    .close-search-btn { position: absolute; top: 20px; right: 20px; font-size: 2.5rem; color: white; background: none; border: none; cursor: pointer; }
-    #search-input-live { width: 100%; padding: 15px; font-size: 1.2rem; border-radius: 8px; border: 2px solid var(--primary-color); background: var(--card-bg); color: white; margin-top: 60px; }
-    #search-results-live { margin-top: 20px; max-height: calc(100vh - 150px); overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
-    .search-result-item { color: white; text-align: center; }
-    .search-result-item img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 5px; margin-bottom: 5px; }
-
-    .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 30px 0; }
-    .pagination a, .pagination span { padding: 12px 25px; border-radius: 8px; font-weight: 600; font-size: 1rem; transition: all 0.2s ease; text-align: center; border: none; text-decoration: none; }
-    .pagination a { background-color: var(--card-bg); color: var(--text-light); }
-    .pagination a:hover { background-color: #333; color: white; transform: translateY(-1px); }
-    .pagination .current { background-color: var(--primary-color); color: white; box-shadow: 0 4px 10px rgba(229, 9, 20, 0.4); }
-
-    .theme-toggle { position: relative; margin-right: 10px; }
-    .theme-btn { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; }
-    .theme-btn:hover { transform: scale(1.1); }
-    .theme-popup { position: absolute; top: 120%; right: 0; background-color: #1a1a1a !important; border: 1px solid #333; border-radius: 8px; display: none; flex-direction: column; padding: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10000; }
-    .theme-option { display: flex; align-items: center; gap: 10px; color: white; padding: 8px 15px; cursor: pointer; border-radius: 5px; transition: background 0.2s; }
-    .theme-option:hover { background-color: rgba(255,255,255,0.1); }
-
-    body.light-mode { --bg-color: #f0f2f5; --card-bg: #ffffff; --text-light: #1c1e21; --text-dark: #65676b; --nav-height: 60px; }
-    body.light-mode .bottom-nav, body.light-mode .mobile-nav-menu, body.light-mode .search-overlay, body.light-mode .home-search-form { background-color: var(--card-bg); color: var(--text-light); }
-    body.light-mode .close-btn, body.light-mode .close-search-btn { color: var(--text-light); }
-    body.light-mode .home-search-input { color: var(--text-light); }
-    body.light-mode .home-search-input::placeholder { color: var(--text-dark); }
-    body.light-mode .news-ticker-container { background-color: #e0f2f1; }
-    body.light-mode .ticker-text { color: #004d40; }
-    body.light-mode .professional-footer { background: #e9ecef; color: #444; border-top: 4px solid #ccc; }
-    body.light-mode .footer-bottom-bar { background-color: #d6d8db; border-top: 1px solid #ccc; color: #333; }
-    body.light-mode .theme-btn { color: var(--text-light); }
-
-    .news-ticker-container { display: flex; align-items: stretch; background-color: #004d40; border-radius: 6px; overflow: hidden; margin: 15px 0 20px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); line-height: 1.5; }
-    .ticker-label { display: flex; align-items: center; justify-content: center; background-color: var(--primary-color); color: white; padding: 10px 20px; font-weight: 700; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0; }
-    .ticker-content { flex-grow: 1; overflow: hidden; position: relative; padding: 0 10px; }
-    .ticker-text { position: absolute; top: 15%; transform: translateY(-50%); white-space: nowrap; font-size: 1rem; color: white; will-change: transform; animation: scroll-left 60s linear infinite; }
-    @keyframes scroll-left { 0% { transform: translate(100vw, -50%); } 100% { transform: translate(-100%, -50%); } }
-
-    .platform-section { margin: 40px 0; overflow: hidden; }
-    .platform-slider .swiper-slide { width: 100px; }
-    .platform-item { display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; color: var(--text-dark); transition: transform 0.2s ease, color 0.2s ease; }
-    .platform-item:hover { transform: scale(1.08); color: var(--text-light); }
-    .platform-logo-wrapper { width: 80px; height: 80px; border-radius: 50%; background-color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid #444; transition: all 0.3s ease; }
-    .platform-item:hover .platform-logo-wrapper { border-color: var(--cyan-accent); box-shadow: 0 0 20px rgba(0, 255, 255, 0.4); }
-    .platform-logo-wrapper img { max-width: 65%; max-height: 65%; object-fit: contain; }
-    .platform-item span { font-weight: 500; font-size: 0.8rem; text-align: center; }
-    .section-title-simple { font-size: 1.6rem; font-weight: 600; margin-bottom: 20px; padding-left: 10px; border-left: 4px solid var(--primary-color); }
-    .platform-header { text-align: center; margin-bottom: 20px; }
-    .platform-logo-display { display: inline-flex; justify-content: center; align-items: center; width: 100px; height: 100px; background-color: #fff; border-radius: 50%; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border: 2px solid #444; }
-    .platform-logo-display img { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-    .professional-footer { background: linear-gradient(to bottom, #1a1a1a, #0f0f0f); color: var(--text-dark); padding-top: 60px; margin-top: 50px; border-top: 4px solid #000; }
-    .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; padding-bottom: 50px; }
-    .footer-column-title { font-size: 1.3rem; font-weight: 600; color: var(--text-light); margin-bottom: 25px; position: relative; padding-bottom: 10px; }
-    .footer-column-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 50px; height: 3px; background-color: var(--primary-color); }
-    .footer-logo img { max-width: 160px; margin-bottom: 15px; }
-    .footer-description { font-size: 0.95rem; line-height: 1.7; }
-    .links-section ul { list-style: none; padding: 0; margin: 0; }
-    .links-section ul li { margin-bottom: 12px; }
-    .links-section ul li a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-dark); transition: all 0.2s ease-in-out; }
-    .links-section ul li a:hover { color: var(--primary-color); transform: translateX(5px); }
-    .telegram-buttons-container { display: flex; flex-direction: column; gap: 15px; }
-    .telegram-button { display: flex; align-items: center; gap: 15px; padding: 12px 15px; border-radius: 8px; text-decoration: none; color: white; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease; }
-    .telegram-button:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--primary-color); transform: translateY(-2px); }
-    .telegram-button i { font-size: 1.8rem; width: 30px; text-align: center; }
-    .telegram-button.notification i { color: #34B7F1; }
-    .telegram-button.request i { color: #f5c518; }
-    .telegram-button.backup i { color: #28a745; }
-    .telegram-button span { display: flex; flex-direction: column; }
-    .telegram-button small { font-size: 0.75rem; color: var(--text-dark); }
-    .footer-note { font-size: 0.8rem; color: var(--text-dark); margin-top: 20px; background-color: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; }
-    .footer-note a { color: #34B7F1; font-weight: bold; }
-    .footer-bottom-bar { background-color: #000; text-align: center; padding: 20px; font-size: 0.9rem; border-top: 1px solid #222; }
-    @media (max-width: 768px) {
-        .footer-grid { text-align: center; }
-        .footer-column-title::after { left: 50%; transform: translateX(-50%); }
-        .footer-logo { margin-left: auto; margin-right: auto; }
-        .links-section ul li a { justify-content: center; }
-        .language-tag, .rating-tag, .type-tag { padding: 2px 7px; font-size: 0.6rem; border-radius: 4px; }
-        .new-badge { padding: 3px 10px 3px 6px; font-size: 0.6rem; }
-    }
-    @media (min-width: 769px) {
-        .container { padding: 0 40px; }
-        .main-header { padding: 0 40px; }
-        body { padding-bottom: 0; }
-        .bottom-nav { display: none; }
-        .hero-slider .hero-title { font-size: 2.2rem; }
-        .hero-slider .hero-slide-content { padding: 40px; }
-        .category-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-        .full-page-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-        .full-page-grid-container { padding: 120px 40px 20px; }
-        .platform-slider .swiper-slide { width: 130px; }
-        .platform-logo-wrapper { width: 100px; height: 100px; }
-        .platform-item span { font-size: 0.9rem; }
-    }
-</style>
-"""
-
-# --- Header & Nav Macros ---
-header_nav_html = """
-<header class="main-header">
-    <div class="header-content container">
-        <button class="menu-toggle" id="mobile-menu-btn" aria-label="Open Menu"><i class="fas fa-bars"></i></button>
-        <a href="{{ url_for('home') }}" class="logo">{{ website_name }}</a>
-        <div class="header-icons">
-            <!-- Anti-Copyright Auto-Blur Toggle -->
-            <div class="theme-toggle">
-                <button class="theme-btn" id="blur-toggle-btn" title="Toggle Anti-Copyright Blur">
-                    <i class="fas fa-eye-slash" id="blur-icon"></i>
-                </button>
-            </div>
-            <!-- Theme Toggle -->
-            <div class="theme-toggle">
-                <button class="theme-btn"><i class="fas fa-adjust"></i></button>
-                <div class="theme-popup">
-                    <div class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark Mode</div>
-                    <div class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light Mode</div>
-                </div>
-            </div>
-            <button class="menu-toggle" onclick="document.getElementById('search-overlay').classList.add('active')" aria-label="Search"><i class="fas fa-search"></i></button>
-        </div>
-    </div>
-</header>
-
-<div class="mobile-nav-menu" id="mobile-nav">
-    <button class="close-btn" id="close-menu-btn">&times;</button>
-    <div class="mobile-links">
-        <a href="{{ url_for('home') }}">Home</a>
-        <a href="{{ url_for('all_movies') }}">Movies</a>
-        <a href="{{ url_for('all_series') }}">Web Series</a>
-        <a href="{{ url_for('genres_page') }}">Genres</a>
-        <a href="{{ url_for('request_content') }}">Request Content</a>
-        <hr>
-        {% for cat in predefined_categories %}
-            <a href="{{ url_for('movies_by_category', name=cat) }}">{{ cat }}</a>
-        {% endfor %}
-    </div>
-</div>
-
-<nav class="bottom-nav">
-    <a href="{{ url_for('home') }}" class="nav-item active"><i class="fas fa-home"></i>Home</a>
-    <a href="{{ url_for('all_movies') }}" class="nav-item"><i class="fas fa-film"></i>Movies</a>
-    <a href="{{ url_for('all_series') }}" class="nav-item"><i class="fas fa-tv"></i>Series</a>
-    <a href="{{ url_for('genres_page') }}" class="nav-item"><i class="fas fa-masks-theater"></i>Genres</a>
-    <a href="{{ url_for('request_content') }}" class="nav-item"><i class="fas fa-paper-plane"></i>Request</a>
-</nav>
-
-<div class="search-overlay" id="search-overlay">
-    <button class="close-search-btn" onclick="document.getElementById('search-overlay').classList.remove('active')">&times;</button>
-    <div class="search-container">
-        <input type="text" id="search-input-live" placeholder="Search movies, series..." autocomplete="off">
-        <div id="search-results-live"></div>
-    </div>
-</div>
-
-<script>
-    // Blur Logic Initialization
-    let blurTimer = {{ blur_settings.timer * 1000 }};
-    let blurEnabled = "{{ blur_settings.enabled }}" === "yes";
-    let isBlurred = false;
-
-    if(blurEnabled && blurTimer > 0) {
-         setTimeout(() => {
-             document.body.classList.add('blur-posters');
-             document.getElementById('blur-icon').classList.replace('fa-eye-slash', 'fa-eye');
-             isBlurred = true;
-         }, blurTimer);
-    } else if (blurEnabled && blurTimer === 0) {
-         document.body.classList.add('blur-posters');
-         document.getElementById('blur-icon').classList.replace('fa-eye-slash', 'fa-eye');
-         isBlurred = true;
-    }
-
-    document.getElementById('blur-toggle-btn').addEventListener('click', () => {
-         isBlurred = !isBlurred;
-         if(isBlurred) {
-             document.body.classList.add('blur-posters');
-             document.getElementById('blur-icon').classList.replace('fa-eye-slash', 'fa-eye');
-         } else {
-             document.body.classList.remove('blur-posters');
-             document.getElementById('blur-icon').classList.replace('fa-eye', 'fa-eye-slash');
-         }
-    });
-
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const closeMenuBtn = document.getElementById('close-menu-btn');
-    const mobileNav = document.getElementById('mobile-nav');
-
-    mobileMenuBtn.addEventListener('click', () => mobileNav.classList.add('active'));
-    closeMenuBtn.addEventListener('click', () => mobileNav.classList.remove('active'));
-
-    const searchInput = document.getElementById('search-input-live');
-    const searchResults = document.getElementById('search-results-live');
-    let searchTimeout;
-
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        const query = this.value.trim();
-        if (query.length > 2) {
-            searchTimeout = setTimeout(() => {
-                fetch(`/api/search?q=${encodeURIComponent(query)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        searchResults.innerHTML = '';
-                        if (data.length > 0) {
-                            data.forEach(item => {
-                                const a = document.createElement('a');
-                                a.href = `/movie/${item._id}`;
-                                a.className = 'search-result-item';
-                                a.innerHTML = `<img src="${item.poster || '{{ "https://via.placeholder.com/400x600.png" }}'}" alt="${item.title}"><div>${item.title}</div>`;
-                                searchResults.appendChild(a);
-                            });
-                        } else { searchResults.innerHTML = '<p style="color:white;text-align:center;width:100%;">No results found</p>'; }
-                    });
-            }, 300);
-        } else { searchResults.innerHTML = ''; }
-    });
-</script>
-"""
-
-footer_html = """
-<footer class="professional-footer">
-    <div class="footer-grid">
-        <div class="footer-column about-section">
-            <h4 class="footer-column-title">About {{ website_name }}</h4>
-            <div class="footer-logo">
-                <!-- Replace with your actual logo image if available -->
-                <h2 style="color: var(--primary-color); margin: 0 0 10px 0;">{{ website_name }}</h2>
-            </div>
-            <p class="footer-description">
-                Your ultimate destination for downloading and streaming the latest movies and web series. We provide high-quality content ranging from 480p to 4K. Bookmark us for your daily entertainment dose!
-            </p>
-        </div>
-
-        <div class="footer-column links-section">
-            <h4 class="footer-column-title">Site Links</h4>
-            <ul>
-                <li><a href="{{ url_for('dmca') }}"><i class="fas fa-gavel"></i> DMCA Policy</a></li>
-                <li><a href="{{ url_for('disclaimer') }}"><i class="fas fa-exclamation-triangle"></i> Disclaimer</a></li>
-                <li><a href="{{ url_for('create_website') }}"><i class="fas fa-palette"></i> Create Your Website</a></li>
-            </ul>
-        </div>
-
-        <div class="footer-column community-section">
-            <h4 class="footer-column-title">Join Our Community</h4>
-            <div class="telegram-buttons-container">
-                <a href="https://t.me/allmoviepsz" target="_blank" class="telegram-button notification">
-                    <i class="fas fa-bell"></i>
-                    <span><strong>New Content Alerts</strong><small>Get notified for every new upload</small></span>
-                </a>
-                <a href="https://t.me/+0kZRI3EUX54wM2Nl" target="_blank" class="telegram-button request">
-                    <i class="fas fa-comments"></i>
-                    <span><strong>Join Request Group</strong><small>Request your favorite content</small></span>
-                </a>
-                <a href="https://t.me/Yabotz" target="_blank" class="telegram-button backup">
-                    <i class="fas fa-shield-alt"></i>
-                    <span><strong>Backup Channel</strong><small>Join for future updates</small></span>
-                </a>
-            </div>
-            <p class="footer-note">
-                <strong>Alternatively,</strong> you can use the <a href="{{ url_for('request_content') }}">Request</a> option in our bottom menu to submit requests directly on the site.
-            </p>
-        </div>
-    </div>
-    <div class="footer-bottom-bar">
-        <p>&copy; {{ datetime.utcnow().year }} {{ website_name }}. All Rights Reserved. Crafted with care for movie lovers.</p>
-    </div>
-</footer>
-"""
-
-macro_html = """
-{% macro render_movie_card(m, is_featured=False) %}
-<a href="{{ url_for('movie_detail', movie_id=m._id) }}" class="movie-card">
-  <div class="poster-wrapper">
-    <div class="card-preloader"><div class="play-button-loader-small"></div></div>
-    
-    <div class="badges-top">
-        <div class="badge-group-left">
-            {% if is_featured %}
-                <span class="featured-badge">Featured</span>
-            {% elif (datetime.utcnow() - m._id.generation_time.replace(tzinfo=None)).days < 7 %}
-                <span class="new-badge">NEW</span>
-            {% endif %}
-        </div>
-        <div class="badge-group-right">
-            {% if m.poster_badge %}
-                <span class="language-tag">{{ m.poster_badge }}</span>
-            {% endif %}
-        </div>
-    </div>
-
-    <img class="movie-poster" loading="lazy" src="{{ m.poster or 'https://via.placeholder.com/400x600.png?text=No+Image' }}" alt="{{ m.title }}">
-
-    <div class="badges-bottom">
-        <div class="badge-group-left">
-            {% if m.vote_average and m.vote_average > 0 %}
-                <span class="rating-tag"><i class="fas fa-star"></i> {{ "%.1f"|format(m.vote_average) }}</span>
-            {% endif %}
-        </div>
-        <div class="badge-group-right">
-            <span class="type-tag">{{ m.type | title }}</span>
-        </div>
-    </div>
-  </div>
-  <div class="card-info">
-    <h4 class="card-title">
-      {{ m.title }}
-      {% if m.release_year %} ({{ m.release_year }}){% elif m.release_date %} ({{ m.release_date.split('-')[0] }}){% endif %}
-    </h4>
-  </div>
-</a>
-{% endmacro %}
-"""
 
 index_html = """
 <!DOCTYPE html>
@@ -649,64 +207,393 @@ index_html = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ query }} - {{ website_name }}</title>
+    <title>{{ website_name }} - Watch Movies and Series</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
-    {{ base_css_js | safe }}
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1a1a1a;
+            --primary-color: #e50914;
+            --text-light: #ffffff;
+            --text-dark: #aaaaaa;
+            --nav-height: 60px;
+            --cyan-accent: #00ffff;
+            --search-accent-color: #00bcd4;
+            --type-color: #00E599;
+        }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding-bottom: 60px; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
+        a { text-decoration: none; color: inherit; }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; box-sizing: border-box; }
+
+        .main-header { position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height); display: flex; align-items: center; z-index: 1000; transition: background-color 0.3s ease; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
+        .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); }
+        .menu-toggle { display: block; font-size: 1.8rem; cursor: pointer; background: none; border: none; color: white; z-index: 1001;}
+
+        .nav-grid-container { padding: 15px 0; margin-top: 60px; }
+        .nav-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+        .nav-grid-item { display: inline-flex; align-items: center; justify-content: center; color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; text-decoration: none; transition: all 0.3s ease; background: linear-gradient(145deg, #d40a0a, #a00000); border: 1px solid #ff4b4b; box-shadow: 0 2px 8px -3px rgba(229, 9, 20, 0.6); }
+        .nav-grid-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px -4px rgba(229, 9, 20, 0.9); filter: brightness(1.1); }
+        .nav-grid-item i { margin-right: 6px; font-size: 1em; line-height: 1; }
+        .icon-18 { font-family: sans-serif; display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; line-height: 1; margin-right: 6px; font-weight: bold; }
+
+        /* START: New Home Page Search Bar Styles */
+        .home-search-section { padding: 10px 0 20px 0; }
+        .home-search-form { display: flex; width: 100%; max-width: 800px; margin: 0 auto; border: 2px solid var(--search-accent-color); border-radius: 8px; overflow: hidden; background-color: var(--card-bg); }
+        .home-search-input { flex-grow: 1; border: none; background-color: transparent; color: var(--text-light); padding: 12px 20px; font-size: 1rem; outline: none; }
+        .home-search-input::placeholder { color: var(--text-dark); }
+        .home-search-button { background-color: var(--search-accent-color); border: none; color: white; padding: 0 25px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease; }
+        .home-search-button:hover { filter: brightness(1.1); }
+        
+        /* === [NEW] STAR ANIMATION FOR "CREATE WEBSITE" LINK === */
+        .glowing-link { position: relative; color: #fff; text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107, 0 0 15px #ffc107; animation: pulsate 2s infinite; }
+        @keyframes pulsate { 0% { text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; } 50% { text-shadow: 0 0 10px #ffc107, 0 0 20px #ffc107, 0 0 25px #ffc107; } 100% { text-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; } }
+        .glowing-link::before, .glowing-link::after { content: '★'; position: absolute; color: #ffeb3b; font-size: 14px; opacity: 0; animation: sparkle 3s infinite; }
+        .glowing-link::before { top: -5px; left: -20px; animation-delay: 0.5s; }
+        .glowing-link::after { bottom: -5px; right: -20px; animation-delay: 1.5s; }
+        @keyframes sparkle { 0%, 100% { transform: scale(0.5); opacity: 0; } 25%, 75% { transform: scale(1.2); opacity: 1; } 50% { transform: scale(0.8); opacity: 0.5; } }
+        
+        .create-website-section { text-align: center; padding: 50px 20px; margin-top: 40px; background-color: var(--card-bg); }
+        .create-website-section h2 { font-size: 2rem; font-weight: 700; margin-bottom: 20px; }
+        .create-website-section .glowing-link { display: inline-block; padding: 15px 35px; border: 2px solid #ffc107; border-radius: 50px; font-size: 1.3rem; font-weight: 600; transition: all 0.3s ease; }
+        .create-website-section .glowing-link:hover { background-color: #ffc107; color: var(--bg-color); text-shadow: none; transform: scale(1.05); }
+
+        @keyframes cyan-glow { 0% { box-shadow: 0 0 15px 2px #00D1FF; } 50% { box-shadow: 0 0 25px 6px #00D1FF; } 100% { box-shadow: 0 0 15px 2px #00D1FF; } }
+        .hero-slider-section { margin-bottom: 30px; }
+        .hero-slider { width: 100%; aspect-ratio: 16 / 9; background-color: var(--card-bg); border-radius: 12px; overflow: hidden; animation: cyan-glow 5s infinite linear; }
+        .hero-slider .swiper-slide { position: relative; display: block; }
+        .hero-slider .hero-bg-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        .hero-slider .hero-slide-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.5) 40%, transparent 70%); z-index: 2; }
+        .hero-slider .hero-slide-content { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; z-index: 3; color: white; }
+        .hero-slider .hero-title { font-size: 1.5rem; font-weight: 700; margin: 0 0 5px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
+        .hero-slider .hero-meta { font-size: 0.9rem; margin: 0; color: var(--text-dark); }
+        .hero-slide-content .hero-type-tag { position: absolute; bottom: 20px; right: 20px; background: linear-gradient(45deg, #00FFA3, #00D1FF); color: black; padding: 5px 15px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; z-index: 4; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0, 255, 163, 0.2); }
+        .hero-slider .swiper-pagination { position: absolute; bottom: 10px !important; left: 20px !important; width: auto !important; }
+        .hero-slider .swiper-pagination-bullet { background: rgba(255, 255, 255, 0.5); width: 8px; height: 8px; opacity: 0.7; transition: all 0.2s ease; }
+        .hero-slider .swiper-pagination-bullet-active { background: var(--text-light); width: 24px; border-radius: 5px; opacity: 1; }
+
+        .category-section { margin: 30px 0; }
+        .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .category-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 20px; padding-left: 15px; border-left: 5px solid var(--primary-color); line-height: 1.2; }
+        .view-all-link { font-size: 0.9rem; color: var(--text-dark); font-weight: 500; padding: 6px 15px; border-radius: 20px; background-color: #222; transition: all 0.3s ease; animation: pulse-glow 2.5s ease-in-out infinite; }
+        .category-grid, .full-page-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+
+        .movie-card { display: flex; flex-direction: column; border-radius: 8px; overflow: hidden; background-color: var(--card-bg); border: 2px solid transparent; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .movie-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 255, 255, 0.2); }
+        .poster-wrapper { position: relative; }
+        .movie-poster { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; }
+        
+        /* Auto Blur System CSS */
+        body.auto-blur .movie-poster { filter: blur(12px); transition: filter 0.3s ease; }
+        body.auto-blur .hero-bg-img { filter: blur(15px); transition: filter 0.3s ease; }
+        body.auto-blur .movie-poster:hover { filter: blur(0px); }
+        body.auto-blur .hero-bg-img:hover { filter: blur(0px); }
+        .blur-toggle-btn { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; margin-right: 15px;}
+        .blur-toggle-btn:hover { transform: scale(1.1); }
+
+        .card-preloader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); z-index: 5; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); border-radius: 8px; transition: opacity 0.2s; }
+        .card-preloader.active { display: flex; }
+        .play-button-loader-small { width: 60px; height: 60px; border: 4px solid rgba(255, 255, 255, 0.4); border-top-color: #fff; border-radius: 50%; position: relative; animation: spin 1s ease-in-out infinite; }
+        .play-button-loader-small::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 0; height: 0; border-style: solid; border-width: 15px 0 15px 25px; border-color: transparent transparent transparent white; margin-left: 4px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .card-info { padding: 10px; background-color: var(--card-bg); }
+        .card-title { font-size: 0.9rem; font-weight: 500; color: var(--text-light); margin: 0 0 5px 0; line-height: 1.4; min-height: 2.8em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-meta { font-size: 0.75rem; color: var(--text-dark); display: flex; align-items: center; gap: 5px; }
+        .card-meta i { color: var(--cyan-accent); }
+        
+        .type-tag, .language-tag { position: absolute; color: white; padding: 2px 8px; font-size: 0.65rem; font-weight: 600; z-index: 2; text-transform: uppercase; border-radius: 4px; }
+        .language-tag { padding: 2px 6px; font-size: 0.6rem; top: 8px; right: 8px; background-color: rgba(0,0,0,0.6); }
+        .type-tag { bottom: 8px; right: 8px; background-color: var(--type-color); color: #000; }
+        .rating-tag { position: absolute; bottom: 8px; left: 8px; background-color: rgba(245, 197, 24, 0.9); color: #000; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; z-index: 2; border-radius: 4px; display: flex; align-items: center; }
+        .rating-tag i { margin-right: 4px; }
+        
+        .new-badge { position: absolute; top: 0; left: 0; background-color: var(--primary-color); color: white; padding: 4px 12px 4px 8px; font-size: 0.7rem; font-weight: 700; z-index: 3; clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%); }
+        .featured-badge { position: absolute; top: 0; left: 0; background-color: #ffc107; color: #000; padding: 4px 12px 4px 8px; font-size: 0.7rem; font-weight: 700; z-index: 3; clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%); }
+
+        .full-page-grid-container { padding: 80px 10px 20px; }
+        .full-page-grid-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 20px; text-align: center; }
+        
+        .ad-container { margin: 20px auto; width: 100%; max-width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; min-height: 50px; text-align: center; }
+        .ad-container > * { max-width: 100% !important; }
+        
+        .mobile-nav-menu {position: fixed;top: 0;left: 0;width: 100%;height: 100%;background-color: var(--bg-color);z-index: 9999;display: flex;flex-direction: column;align-items: center;justify-content: center;transform: translateX(-100%);transition: transform 0.3s ease-in-out;}
+        .mobile-nav-menu.active {transform: translateX(0);}
+        .mobile-nav-menu .close-btn {position: absolute;top: 20px;right: 20px;font-size: 2.5rem;color: white;background: none;border: none;cursor: pointer;}
+        .mobile-links {display: flex;flex-direction: column;text-align: center;gap: 25px;}
+        .mobile-links a {font-size: 1.5rem;font-weight: 500;color: var(--text-light);transition: color 0.2s;}
+        .mobile-links a:hover {color: var(--primary-color);}
+        .mobile-links hr {width: 50%;border-color: #333;margin: 10px auto;}
+        
+        .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background-color: #181818; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); z-index: 1000; justify-content: space-around; align-items: center; padding-top: 5px; }
+        .bottom-nav .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-dark); background: none; border: none; font-size: 12px; flex-grow: 1; font-weight: 500; }
+        .bottom-nav .nav-item i { font-size: 22px; margin-bottom: 5px; }
+        .bottom-nav .nav-item.active, .bottom-nav .nav-item:hover { color: var(--primary-color); }
+        
+        .search-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; display: none; flex-direction: column; padding: 20px; }
+        .search-overlay.active { display: flex; }
+        .search-container { width: 100%; max-width: 800px; margin: 0 auto; }
+        .close-search-btn { position: absolute; top: 20px; right: 20px; font-size: 2.5rem; color: white; background: none; border: none; cursor: pointer; }
+        #search-input-live { width: 100%; padding: 15px; font-size: 1.2rem; border-radius: 8px; border: 2px solid var(--primary-color); background: var(--card-bg); color: white; margin-top: 60px; }
+        #search-results-live { margin-top: 20px; max-height: calc(100vh - 150px); overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+        .search-result-item { color: white; text-align: center; }
+        .search-result-item img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 5px; margin-bottom: 5px; }
+        
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 30px 0; }
+        .pagination a, .pagination span { padding: 12px 25px; border-radius: 8px; font-weight: 600; font-size: 1rem; transition: all 0.2s ease; text-align: center; border: none; text-decoration: none; }
+        .pagination a { background-color: var(--card-bg); color: var(--text-light); }
+        .pagination a:hover { background-color: #333; color: white; transform: translateY(-1px); }
+        .pagination .current { background-color: var(--primary-color); color: white; box-shadow: 0 4px 10px rgba(229, 9, 20, 0.4); }
+
+        .theme-toggle { position: relative; margin-right: 10px; }
+        .theme-btn { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; }
+        .theme-btn:hover { transform: scale(1.1); }
+        .theme-popup { position: absolute; top: 120%; right: 0; background-color: #1a1a1a !important; border: 1px solid #333; border-radius: 8px; display: none; flex-direction: column; padding: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10000; }
+        .theme-option { display: flex; align-items: center; gap: 10px; color: white; padding: 8px 15px; cursor: pointer; border-radius: 5px; transition: background 0.2s; }
+        .theme-option:hover { background-color: rgba(255,255,255,0.1); }
+
+        body.light-mode { --bg-color: #f0f2f5; --card-bg: #ffffff; --text-light: #1c1e21; --text-dark: #65676b; --nav-height: 60px; }
+        body.light-mode .bottom-nav, body.light-mode .mobile-nav-menu, body.light-mode .search-overlay, body.light-mode .home-search-form { background-color: var(--card-bg); color: var(--text-light); }
+        body.light-mode .close-btn, body.light-mode .close-search-btn { color: var(--text-light); }
+        body.light-mode .home-search-input { color: var(--text-light); }
+        body.light-mode .home-search-input::placeholder { color: var(--text-dark); }
+        body.light-mode .news-ticker-container { background-color: #e0f2f1; }
+        body.light-mode .ticker-text { color: #004d40; }
+        body.light-mode .blur-toggle-btn { color: var(--text-light); }
+        body.light-mode .theme-btn { color: var(--text-light); }
+        
+        .news-ticker-container { display: flex; align-items: stretch; background-color: #004d40; border-radius: 6px; overflow: hidden; margin: 15px 0 20px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); line-height: 1.5; }
+        .ticker-label { display: flex; align-items: center; justify-content: center; background-color: var(--primary-color); color: white; padding: 10px 20px; font-weight: 700; font-size: 0.9rem; white-space: nowrap; flex-shrink: 0; }
+        .ticker-content { flex-grow: 1; overflow: hidden; position: relative; padding: 0 10px; }
+        .ticker-text { position: absolute; top: 15%; transform: translateY(-50%); white-space: nowrap; font-size: 1rem; color: white; will-change: transform; animation: scroll-left 60s linear infinite; }
+        @keyframes scroll-left { 0% { transform: translate(100vw, -50%); } 100% { transform: translate(-100%, -50%); } }
+
+        .platform-section { margin: 40px 0; overflow: hidden; }
+        .platform-slider .swiper-slide { width: 100px; }
+        .platform-item { display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; color: var(--text-dark); transition: transform 0.2s ease, color 0.2s ease; }
+        .platform-item:hover { transform: scale(1.08); color: var(--text-light); }
+        .platform-logo-wrapper { width: 80px; height: 80px; border-radius: 50%; background-color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid #444; transition: all 0.3s ease; }
+        .platform-item:hover .platform-logo-wrapper { border-color: var(--cyan-accent); box-shadow: 0 0 20px rgba(0, 255, 255, 0.4); }
+        .platform-logo-wrapper img { max-width: 65%; max-height: 65%; object-fit: contain; }
+        .platform-item span { font-weight: 500; font-size: 0.8rem; text-align: center; }
+        .section-title-simple { font-size: 1.6rem; font-weight: 600; margin-bottom: 20px; padding-left: 10px; border-left: 4px solid var(--primary-color); }
+        
+        .platform-header { text-align: center; margin-bottom: 20px; }
+        .platform-logo-display { display: inline-flex; justify-content: center; align-items: center; width: 100px; height: 100px; background-color: #fff; border-radius: 50%; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border: 2px solid #444; }
+        .platform-logo-display img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .professional-footer { background: linear-gradient(to bottom, #1a1a1a, #0f0f0f); color: var(--text-dark); padding-top: 60px; margin-top: 50px; border-top: 4px solid #000; }
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; padding-bottom: 50px; }
+        .footer-column-title { font-size: 1.3rem; font-weight: 600; color: var(--text-light); margin-bottom: 25px; position: relative; padding-bottom: 10px; }
+        .footer-column-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 50px; height: 3px; background-color: var(--primary-color); }
+        .footer-logo img { max-width: 160px; margin-bottom: 15px; }
+        .footer-description { font-size: 0.95rem; line-height: 1.7; }
+        .links-section ul { list-style: none; padding: 0; margin: 0; }
+        .links-section ul li { margin-bottom: 12px; }
+        .links-section ul li a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-dark); transition: all 0.2s ease-in-out; }
+        .links-section ul li a:hover { color: var(--primary-color); transform: translateX(5px); }
+        .telegram-buttons-container { display: flex; flex-direction: column; gap: 15px; }
+        .telegram-button { display: flex; align-items: center; gap: 15px; padding: 12px 15px; border-radius: 8px; text-decoration: none; color: white; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease; }
+        .telegram-button:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--primary-color); transform: translateY(-2px); }
+        .telegram-button i { font-size: 1.8rem; width: 30px; text-align: center; }
+        .telegram-button.notification i { color: #34B7F1; }
+        .telegram-button.request i { color: #f5c518; }
+        .telegram-button.backup i { color: #28a745; }
+        .telegram-button span { display: flex; flex-direction: column; }
+        .telegram-button small { font-size: 0.75rem; color: var(--text-dark); }
+        .footer-note { font-size: 0.8rem; color: var(--text-dark); margin-top: 20px; background-color: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; }
+        .footer-note a { color: #34B7F1; font-weight: bold; }
+        .footer-bottom-bar { background-color: #000; text-align: center; padding: 20px; font-size: 0.9rem; border-top: 1px solid #222; }
+
+        @media (max-width: 768px) {
+            .footer-grid { text-align: center; }
+            .footer-column-title::after { left: 50%; transform: translateX(-50%); }
+            .footer-logo { margin-left: auto; margin-right: auto; }
+            .links-section ul li a { justify-content: center; }
+        }
+
+        @media (min-width: 769px) {
+            .container { padding: 0 40px; }
+            .main-header { padding: 0 40px; }
+            body { padding-bottom: 0; }
+            .bottom-nav { display: none; }
+            .hero-slider .hero-title { font-size: 2.2rem; }
+            .hero-slider .hero-slide-content { padding: 40px; }
+            .category-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+            .full-page-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+            .full-page-grid-container { padding: 120px 40px 20px; }
+            .platform-slider .swiper-slide { width: 130px; }
+            .platform-logo-wrapper { width: 100px; height: 100px; }
+            .platform-item span { font-size: 0.9rem; }
+        }
+    </style>
     {{ ad_settings.ad_header | safe }}
 </head>
 <body>
-    {{ header_nav_html | safe }}
-    {{ ad_settings.ad_body_top | safe }}
-    {{ macro_html | safe }}
 
-    {% if is_full_page_list %} 
-        <div class="full-page-grid-container container">
-        {% if platform_info and ott_platform_logos.get(platform_info.name) %}
-        <div class="platform-header">
-            <div class="platform-logo-display">
-                <img src="{{ ott_platform_logos[platform_info.name] }}" alt="{{ platform_info.name }} Logo">
+    <header class="main-header">
+        <div class="header-content container">
+            <button class="menu-toggle" id="mobile-menu-btn" aria-label="Open Menu"><i class="fas fa-bars"></i></button>
+            <a href="{{ url_for('home') }}" class="logo">{{ website_name }}</a>
+            <div class="header-icons" style="display:flex; align-items:center;">
+                
+                <!-- NEW: Eye Icon for Auto Blur Toggle -->
+                <button id="blur-toggle-btn" class="blur-toggle-btn" title="Toggle Anti-Copyright Blur">
+                    <i class="fas fa-eye-slash" id="blur-icon"></i>
+                </button>
+
+                <div class="theme-toggle">
+                    <button class="theme-btn"><i class="fas fa-adjust"></i></button>
+                    <div class="theme-popup">
+                        <div class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark Mode</div>
+                        <div class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light Mode</div>
+                    </div>
+                </div>
+                <button class="menu-toggle" onclick="document.getElementById('search-overlay').classList.add('active')" aria-label="Search" style="margin-left:10px;"><i class="fas fa-search"></i></button>
             </div>
         </div>
-        {% endif %}
-        
-        <h2 class="full-page-grid-title">{{ query }}</h2>
-        {% if movies|length == 0 %}<p style="text-align:center;">No content found.</p>
-        {% else %}
-        <div class="full-page-grid">
-            {% for m in movies %}
-                {{ render_movie_card(m, is_featured=is_featured_page) }}
+    </header>
+
+    <div class="mobile-nav-menu" id="mobile-nav">
+        <button class="close-btn" id="close-menu-btn">&times;</button>
+        <div class="mobile-links">
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('all_movies') }}">Movies</a>
+            <a href="{{ url_for('all_series') }}">Web Series</a>
+            <a href="{{ url_for('genres_page') }}">Genres</a>
+            <a href="{{ url_for('request_content') }}">Request Content</a>
+            <hr>
+            {% for cat in predefined_categories %}
+                <a href="{{ url_for('movies_by_category', name=cat) }}">{{ cat }}</a>
             {% endfor %}
         </div>
-        {% if pagination and pagination.total_pages > 1 %}
-        <div class="pagination">
-            {% if pagination.has_prev %}<a href="{{ url_for(request.endpoint, page=pagination.prev_num, name=query if 'category' in request.endpoint or 'platform' in request.endpoint else None, genre_name=query.replace('Genres: ', '') if 'genre' in request.endpoint else None) }}">&laquo; Prev</a>{% endif %}
-            <span class="current">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
-            {% if pagination.has_next %}<a href="{{ url_for(request.endpoint, page=pagination.next_num, name=query if 'category' in request.endpoint or 'platform' in request.endpoint else None, genre_name=query.replace('Genres: ', '') if 'genre' in request.endpoint else None) }}">Next &raquo;</a>{% endif %}
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="{{ url_for('home') }}" class="nav-item active"><i class="fas fa-home"></i>Home</a>
+        <a href="{{ url_for('all_movies') }}" class="nav-item"><i class="fas fa-film"></i>Movies</a>
+        <a href="{{ url_for('all_series') }}" class="nav-item"><i class="fas fa-tv"></i>Series</a>
+        <a href="{{ url_for('genres_page') }}" class="nav-item"><i class="fas fa-masks-theater"></i>Genres</a>
+        <a href="{{ url_for('request_content') }}" class="nav-item"><i class="fas fa-paper-plane"></i>Request</a>
+    </nav>
+
+    <div class="search-overlay" id="search-overlay">
+        <button class="close-search-btn" onclick="document.getElementById('search-overlay').classList.remove('active')">&times;</button>
+        <div class="search-container">
+            <input type="text" id="search-input-live" placeholder="Search movies, series..." autocomplete="off">
+            <div id="search-results-live"></div>
         </div>
-        {% endif %}
-        {% endif %}
+    </div>
+
+    {{ ad_settings.ad_body_top | safe }}
+
+    {% macro render_movie_card(m, is_featured=False) %}
+    <a href="{{ url_for('movie_detail', movie_id=m._id) }}" class="movie-card">
+      <div class="poster-wrapper">
+        <div class="card-preloader"><div class="play-button-loader-small"></div></div>
+        
+        <div class="badges-top">
+            <div class="badge-group-left">
+                {% if is_featured %}
+                    <span class="featured-badge">Featured</span>
+                {% elif (datetime.utcnow() - m._id.generation_time.replace(tzinfo=None)).days < 7 %}
+                    <span class="new-badge">NEW</span>
+                {% endif %}
+            </div>
+            <div class="badge-group-right">
+                {% if m.poster_badge %}
+                    <span class="language-tag">{{ m.poster_badge }}</span>
+                {% endif %}
+            </div>
         </div>
-    {% else %}
+
+        <img class="movie-poster" loading="lazy" src="{{ m.poster or 'https://via.placeholder.com/400x600.png?text=No+Image' }}" alt="{{ m.title }}">
+
+        <div class="badges-bottom">
+            <div class="badge-group-left">
+                {% if m.vote_average and m.vote_average > 0 %}
+                    <span class="rating-tag"><i class="fas fa-star"></i> {{ "%.1f"|format(m.vote_average) }}</span>
+                {% endif %}
+            </div>
+            <div class="badge-group-right">
+                <span class="type-tag">{{ m.type | title }}</span>
+            </div>
+        </div>
+      </div>
+      <div class="card-info">
+        <h4 class="card-title">
+          {{ m.title }}
+          {% if m.release_year %} ({{ m.release_year }}){% elif m.release_date %} ({{ m.release_date.split('-')[0] }}){% endif %}
+        </h4>
+      </div>
+    </a>
+    {% endmacro %}
+
+    {% if is_full_page_list %} 
+
+        <div class="full-page-grid-container container">
+            {% if platform_info and ott_platform_logos.get(platform_info.name) %}
+            <div class="platform-header">
+                <div class="platform-logo-display">
+                    <img src="{{ ott_platform_logos[platform_info.name] }}" alt="{{ platform_info.name }} Logo">
+                </div>
+            </div>
+            {% endif %}
+            
+            <h2 class="full-page-grid-title">{{ query }}</h2>
+            {% if movies|length == 0 %}<p style="text-align:center;">No content found.</p>
+            {% else %}
+            <div class="full-page-grid">
+                {% for m in movies %}
+                    {{ render_movie_card(m, is_featured=is_featured_page) }}
+                {% endfor %}
+            </div>
+            {% if pagination and pagination.total_pages > 1 %}
+            <div class="pagination">
+                {% if pagination.has_prev %}<a href="{{ url_for(request.endpoint, page=pagination.prev_num, name=query if 'category' in request.endpoint or 'platform' in request.endpoint else None, genre_name=query.replace('Genres: ', '') if 'genre' in request.endpoint else None) }}">&laquo; Prev</a>{% endif %}
+                
+                <span class="current">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+                
+                {% if pagination.has_next %}<a href="{{ url_for(request.endpoint, page=pagination.next_num, name=query if 'category' in request.endpoint or 'platform' in request.endpoint else None, genre_name=query.replace('Genres: ', '') if 'genre' in request.endpoint else None) }}">Next &raquo;</a>{% endif %}
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+
+    {% else %} 
+
         <section class="nav-grid-container container">
             <div class="nav-grid">
-                <a href="{{ url_for('home') }}" class="nav-grid-item"><i class="fas {{ category_icons.get('HOME', 'fa-tag') }}"></i> HOME</a>
+                <a href="{{ url_for('home') }}" class="nav-grid-item">
+                    <i class="fas {{ category_icons.get('HOME', 'fa-tag') }}"></i> HOME
+                </a>
                 {% for cat in predefined_categories %}
                     <a href="{{ url_for('movies_by_category', name=cat) }}" class="nav-grid-item">
-                        {% if '18+' in cat %}<span class="icon-18">18</span>{% else %}<i class="fas {{ category_icons.get(cat, 'fa-tag') }}"></i>{% endif %}
+                        {% if '18+' in cat %}
+                            <span class="icon-18">18</span>
+                        {% else %}
+                            <i class="fas {{ category_icons.get(cat, 'fa-tag') }}"></i>
+                        {% endif %}
                         {{ cat }}
                     </a>
                 {% endfor %}
-                <a href="{{ url_for('all_movies') }}" class="nav-grid-item"><i class="fas {{ category_icons.get('ALL MOVIES', 'fa-tag') }}"></i> ALL MOVIES</a>
-                <a href="{{ url_for('all_series') }}" class="nav-grid-item"><i class="fas {{ category_icons.get('WEB SERIES & TV SHOWS', 'fa-tag') }}"></i> WEB SERIES & TV SHOWS</a>
+                <a href="{{ url_for('all_movies') }}" class="nav-grid-item">
+                    <i class="fas {{ category_icons.get('ALL MOVIES', 'fa-tag') }}"></i> ALL MOVIES
+                </a>
+                <a href="{{ url_for('all_series') }}" class="nav-grid-item">
+                    <i class="fas {{ category_icons.get('WEB SERIES & TV SHOWS', 'fa-tag') }}"></i> WEB SERIES & TV SHOWS
+                </a>
             </div>
         </section>
 
         <section class="home-search-section container">
             <form action="{{ url_for('home') }}" method="get" class="home-search-form">
                 <input type="text" name="q" class="home-search-input" placeholder="Search and explore your favorite content...">
-                <button type="submit" class="home-search-button" aria-label="Search"><i class="fas fa-search"></i></button>
+                <button type="submit" class="home-search-button" aria-label="Search">
+                    <i class="fas fa-search"></i>
+                </button>
             </form>
         </section>
 
@@ -732,7 +619,9 @@ index_html = """
                             <div class="hero-slide-overlay"></div>
                             <div class="hero-slide-content">
                                 <h2 class="hero-title">{{ item.title }}</h2>
-                                <p class="hero-meta">{% if item.release_date %}{{ item.release_date.split('-')[0] }}{% endif %}</p>
+                                <p class="hero-meta">
+                                    {% if item.release_date %}{{ item.release_date.split('-')[0] }}{% endif %}
+                                </p>
                                 <span class="hero-type-tag">{{ item.type | title }}</span>
                             </div>
                         </a>
@@ -753,7 +642,9 @@ index_html = """
                         {% if ott_platform_logos.get(platform) %}
                         <div class="swiper-slide">
                             <a href="{{ url_for('movies_by_platform', platform_name=platform) }}" class="platform-item">
-                                <div class="platform-logo-wrapper"><img src="{{ ott_platform_logos[platform] }}" alt="{{ platform }} Logo"></div>
+                                <div class="platform-logo-wrapper">
+                                    <img src="{{ ott_platform_logos[platform] }}" alt="{{ platform }} Logo">
+                                </div>
                                 <span>{{ platform }}</span>
                             </a>
                         </div>
@@ -765,6 +656,7 @@ index_html = """
         {% endif %}
 
         <div class="container">
+        
         {% if featured_content %}
         <section class="category-section">
             <div class="category-header">
@@ -782,7 +674,7 @@ index_html = """
             </div>
         </section>
         {% endif %}
-
+          
         {% if trending_content %}
         <section class="category-section">
             <div class="category-header">
@@ -810,9 +702,9 @@ index_html = """
             </div>
         </section>
         {% endif %}
-
+          
         {% if ad_settings.ad_list_page %}<div class="ad-container">{{ ad_settings.ad_list_page | safe }}</div>{% endif %}
-
+          
         {% if latest_movies %}
         <section class="category-section">
             <div class="category-header">
@@ -857,70 +749,170 @@ index_html = """
         </div>
     {% endif %}
 
-    {{ footer_html | safe }}
-    {{ ad_settings.ad_footer | safe }}
+    <footer class="professional-footer">
+        <div class="footer-grid">
+            <div class="footer-column about-section">
+                <h4 class="footer-column-title">About {{ website_name }}</h4>
+                <div class="footer-logo">
+                    <h2 style="color: var(--primary-color); margin: 0 0 10px 0;">{{ website_name }}</h2>
+                </div>
+                <p class="footer-description">
+                    Your ultimate destination for downloading and streaming the latest movies and web series. We provide high-quality content ranging from 480p to 4K.
+                </p>
+            </div>
+            <div class="footer-column links-section">
+                <h4 class="footer-column-title">Site Links</h4>
+                <ul>
+                    <li><a href="{{ url_for('dmca') }}"><i class="fas fa-gavel"></i> DMCA Policy</a></li>
+                    <li><a href="{{ url_for('disclaimer') }}"><i class="fas fa-exclamation-triangle"></i> Disclaimer</a></li>
+                    <li><a href="{{ url_for('create_website') }}"><i class="fas fa-palette"></i> Create Your Website</a></li>
+                </ul>
+            </div>
+            <div class="footer-column community-section">
+                <h4 class="footer-column-title">Join Our Community</h4>
+                <div class="telegram-buttons-container">
+                    <a href="https://t.me/allmoviepsz" target="_blank" class="telegram-button notification">
+                        <i class="fas fa-bell"></i>
+                        <span><strong>New Content Alerts</strong><small>Get notified for every new upload</small></span>
+                    </a>
+                    <a href="https://t.me/+0kZRI3EUX54wM2Nl" target="_blank" class="telegram-button request">
+                        <i class="fas fa-comments"></i>
+                        <span><strong>Join Request Group</strong><small>Request your favorite content</small></span>
+                    </a>
+                    <a href="https://t.me/Yabotz" target="_blank" class="telegram-button backup">
+                        <i class="fas fa-shield-alt"></i>
+                        <span><strong>Backup Channel</strong><small>Join for future updates</small></span>
+                    </a>
+                </div>
+                <p class="footer-note">
+                    <strong>Alternatively,</strong> you can use the <a href="{{ url_for('request_content') }}">Request</a> option in our bottom menu to submit requests directly on the site.
+                </p>
+            </div>
+        </div>
+        <div class="footer-bottom-bar">
+            <p>&copy; {{ datetime.utcnow().year }} {{ website_name }}. All Rights Reserved. Crafted with care for movie lovers.</p>
+        </div>
+    </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"></script>
+    {{ ad_settings.ad_footer | safe }}
     <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
     <script>
-        // Hero Slider
-        const heroSwiper = new Swiper('.hero-slider', {
-            loop: true, autoplay: { delay: 4000, disableOnInteraction: false },
-            pagination: { el: '.swiper-pagination', clickable: true }, effect: 'fade'
-        });
+        // === [NEW] AUTO BLUR LOGIC ===
+        const blurConfig = {
+            enabled: "{{ blur_settings.enabled }}" === "yes",
+            timer: parseInt("{{ blur_settings.timer }}") * 1000
+        };
+        let isBlurred = false;
+        let blurTimeout;
 
-        // Featured Slider
-        const featuredSwiper = new Swiper('.featured-slider', {
-            breakpoints: { 320: { slidesPerView: 2, spaceBetween: 15 }, 768: { slidesPerView: 4, spaceBetween: 20 } },
-            speed: 800, loop: false,
-        });
-        let featuredAutoplayTimeout;
-        function startFeaturedAutoplay() {
-            stopFeaturedAutoplay();
-            featuredAutoplayTimeout = setInterval(() => {
-                if (featuredSwiper.isEnd) {
-                    stopFeaturedAutoplay();
-                    setTimeout(() => {
-                        featuredSwiper.slideTo(0, 2000);
-                        setTimeout(() => { startFeaturedAutoplay(); }, 2000);
-                    }, 1500);
-                } else { featuredSwiper.slideNext(); }
-            }, 3000);
+        function applyBlur() {
+            document.body.classList.add('auto-blur');
+            const icon = document.getElementById('blur-icon');
+            if(icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+            isBlurred = true;
         }
-        function stopFeaturedAutoplay() { clearInterval(featuredAutoplayTimeout); }
+
+        function removeBlur() {
+            document.body.classList.remove('auto-blur');
+            const icon = document.getElementById('blur-icon');
+            if(icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+            isBlurred = false;
+        }
+
+        if (blurConfig.enabled) {
+            if(blurConfig.timer === 0) {
+                applyBlur(); // Instant blur
+            } else {
+                blurTimeout = setTimeout(applyBlur, blurConfig.timer);
+            }
+        }
+
+        const blurBtn = document.getElementById('blur-toggle-btn');
+        if(blurBtn) {
+            blurBtn.addEventListener('click', function() {
+                if (isBlurred) {
+                    removeBlur();
+                    clearTimeout(blurTimeout);
+                } else {
+                    applyBlur();
+                }
+            });
+        }
+        // === END AUTO BLUR LOGIC ===
+
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const closeMenuBtn = document.getElementById('close-menu-btn');
+        const mobileNav = document.getElementById('mobile-nav');
+        if(mobileMenuBtn){ mobileMenuBtn.addEventListener('click', () => mobileNav.classList.add('active')); }
+        if(closeMenuBtn){ closeMenuBtn.addEventListener('click', () => mobileNav.classList.remove('active')); }
+
+        const searchInput = document.getElementById('search-input-live');
+        const searchResults = document.getElementById('search-results-live');
+        let searchTimeout;
+        if(searchInput){
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                if (query.length > 2) {
+                    searchTimeout = setTimeout(() => {
+                        fetch(`/api/search?q=${encodeURIComponent(query)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                searchResults.innerHTML = '';
+                                if (data.length > 0) {
+                                    data.forEach(item => {
+                                        const a = document.createElement('a');
+                                        a.href = `/movie/${item._id}`;
+                                        a.className = 'search-result-item';
+                                        a.innerHTML = `<img src="${item.poster || 'https://via.placeholder.com/400x600.png'}" alt="${item.title}"><div>${item.title}</div>`;
+                                        searchResults.appendChild(a);
+                                    });
+                                } else { searchResults.innerHTML = '<p style="color:white;text-align:center;width:100%;">No results found</p>'; }
+                            });
+                    }, 300);
+                } else { searchResults.innerHTML = ''; }
+            });
+        }
+
+        const heroSliderEl = document.querySelector('.hero-slider');
+        if(heroSliderEl) {
+            new Swiper('.hero-slider', {
+                loop: true, autoplay: { delay: 4000, disableOnInteraction: false },
+                pagination: { el: '.swiper-pagination', clickable: true }, effect: 'fade'
+            });
+        }
+
         const featuredSliderEl = document.querySelector('.featured-slider');
         if(featuredSliderEl) {
-            let featuredInteractionTimeout;
-            const onFeaturedInteractionStart = () => { stopFeaturedAutoplay(); clearTimeout(featuredInteractionTimeout); };
-            const onFeaturedInteractionEnd = () => { featuredInteractionTimeout = setTimeout(() => { startFeaturedAutoplay(); }, 3500); };
-            featuredSliderEl.addEventListener('touchstart', onFeaturedInteractionStart, { passive: true });
-            featuredSliderEl.addEventListener('touchend', onFeaturedInteractionEnd, { passive: true });
-            featuredSliderEl.addEventListener('mouseenter', onFeaturedInteractionStart);
-            featuredSliderEl.addEventListener('mouseleave', onFeaturedInteractionEnd);
+            const featuredSwiper = new Swiper('.featured-slider', {
+                breakpoints: { 320: { slidesPerView: 2, spaceBetween: 15 }, 768: { slidesPerView: 4, spaceBetween: 20 } },
+                speed: 800, loop: false,
+            });
+            let featuredAutoplayTimeout;
+            function startFeaturedAutoplay() {
+                clearInterval(featuredAutoplayTimeout);
+                featuredAutoplayTimeout = setInterval(() => {
+                    if (featuredSwiper.isEnd) {
+                        clearInterval(featuredAutoplayTimeout);
+                        setTimeout(() => { featuredSwiper.slideTo(0, 2000); setTimeout(() => { startFeaturedAutoplay(); }, 2000); }, 1500);
+                    } else { featuredSwiper.slideNext(); }
+                }, 3000);
+            }
             startFeaturedAutoplay();
         }
 
-        // Platform Slider
-        let platformAutoplayTimeout;
-        const platformSwiper = new Swiper('.platform-slider', {
-            slidesPerView: 'auto', spaceBetween: 25, speed: 800, loop: false,
-            on: { reachEnd: function () { setTimeout(() => { this.slideTo(0, 1500); }, 1000); } },
-        });
-        function startPlatformAutoplay() {
-            stopPlatformAutoplay();
-            platformAutoplayTimeout = setInterval(() => { if (!platformSwiper.isEnd) platformSwiper.slideNext(); }, 3000);
-        }
-        function stopPlatformAutoplay() { clearInterval(platformAutoplayTimeout); }
         const platformSliderEl = document.querySelector('.platform-slider');
         if(platformSliderEl) {
-            let pInteractionTimeout;
-            const onPInteractionStart = () => { stopPlatformAutoplay(); clearTimeout(pInteractionTimeout); };
-            const onPInteractionEnd = () => { pInteractionTimeout = setTimeout(() => { startPlatformAutoplay(); }, 3500); };
-            platformSliderEl.addEventListener('touchstart', onPInteractionStart, { passive: true });
-            platformSliderEl.addEventListener('touchend', onPInteractionEnd, { passive: true });
-            platformSliderEl.addEventListener('mouseenter', onPInteractionStart);
-            platformSliderEl.addEventListener('mouseleave', onPInteractionEnd);
-            startPlatformAutoplay();
+            const platformSwiper = new Swiper('.platform-slider', {
+                slidesPerView: 'auto', spaceBetween: 25, speed: 800, loop: false,
+                on: { reachEnd: function () { setTimeout(() => { this.slideTo(0, 1500); }, 1000); } },
+            });
+            let pAutoPlay;
+            function startPAutoplay() {
+                clearInterval(pAutoPlay);
+                pAutoPlay = setInterval(() => { if (!platformSwiper.isEnd) platformSwiper.slideNext(); }, 3000);
+            }
+            startPAutoplay();
         }
 
         function initializeCardLoaders() {
@@ -934,12 +926,11 @@ index_html = """
                 });
             });
         }
-        document.addEventListener('DOMContentLoaded', function() { initializeCardLoaders(); });
+        document.addEventListener('DOMContentLoaded', initializeCardLoaders);
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) document.querySelectorAll('.card-preloader.active').forEach(p => p.classList.remove('active'));
         });
 
-        // Theme Switcher Logic
         const themeBtn = document.querySelector('.theme-btn');
         const themePopup = document.querySelector('.theme-popup');
         const themeOptions = document.querySelectorAll('.theme-option');
@@ -947,24 +938,25 @@ index_html = """
             if (theme === 'light') document.body.classList.add('light-mode');
             else document.body.classList.remove('light-mode');
         };
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        applyTheme(savedTheme);
-        themeBtn.addEventListener('click', (e) => {
-            if(e.target.closest('#blur-toggle-btn')) return; // Ignore blur btn
-            const isDisplayed = themePopup.style.display === 'flex';
-            themePopup.style.display = isDisplayed ? 'none' : 'flex';
-        });
-        themeOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                const selectedTheme = option.getAttribute('data-theme');
-                localStorage.setItem('theme', selectedTheme);
-                applyTheme(selectedTheme);
-                themePopup.style.display = 'none';
+        applyTheme(localStorage.getItem('theme') || 'dark');
+        
+        if(themeBtn){
+            themeBtn.addEventListener('click', () => {
+                const isDisplayed = themePopup.style.display === 'flex';
+                themePopup.style.display = isDisplayed ? 'none' : 'flex';
             });
-        });
-        document.addEventListener('click', (event) => {
-            if (!themeBtn.contains(event.target) && !themePopup.contains(event.target)) themePopup.style.display = 'none';
-        });
+            themeOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const selectedTheme = option.getAttribute('data-theme');
+                    localStorage.setItem('theme', selectedTheme);
+                    applyTheme(selectedTheme);
+                    themePopup.style.display = 'none';
+                });
+            });
+            document.addEventListener('click', (event) => {
+                if (!themeBtn.contains(event.target) && !themePopup.contains(event.target)) themePopup.style.display = 'none';
+            });
+        }
     </script>
 </body>
 </html>
@@ -979,75 +971,163 @@ detail_html = """
     <title>{{ movie.title }} - {{ website_name }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    {{ base_css_js | safe }}
     <style>
-        .page-header { padding: 20px 15px 15px 15px; margin-top: var(--nav-height); }
-        .go-back-btn { display: inline-flex; align-items: center; gap: 10px; background-color: rgba(45, 45, 45, 0.9); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 1rem; font-weight: 500; }
-        .hero-section-wrapper { margin: 0 15px 30px 15px; position: relative; overflow: visible; margin-bottom: 120px; }
-        .detail-hero-backdrop { width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 0 30px 0 rgba(0, 255, 255, 0.25); border: 1px solid rgba(0, 255, 255, 0.2); background-color: #000; }
-        .hero-backdrop-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-        .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; background: linear-gradient(180deg, rgba(20,20,20,0) 50%, rgba(20,20,20,0.8) 100%); }
-        .overlay-poster { position: absolute; z-index: 4; bottom: -80px; left: 20px; width: 35%; max-width: 150px; border-radius: 12px; border: 3px solid rgba(255, 255, 255, 0.15); box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
+        :root { --bg-color: #000000; --card-bg: #1a1a1a; --primary-color: #e50914; --text-light: #ffffff; --text-dark: #aaaaaa; --nav-height: 60px; --cyan-accent: #00ffff; --type-color: #00E599; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding-bottom: 60px; }
+        a { text-decoration: none; color: inherit; }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; box-sizing: border-box; }
+        
+        .main-header { position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height); display: flex; align-items: center; z-index: 1000; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
+        .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); }
+        .menu-toggle { font-size: 1.8rem; cursor: pointer; background: none; border: none; color: white; }
+
+        .page-header { padding: 20px 15px 15px 15px; margin-top: var(--nav-height);} 
+        .go-back-btn { display: inline-flex; align-items: center; gap: 10px; background-color: rgba(45, 45, 45, 0.9); color: #fff; padding: 10px 20px; border-radius: 12px; font-size: 1rem; font-weight: 500; } 
+        
+        .hero-section-wrapper { margin: 0 15px 30px 15px; position: relative; overflow: visible; margin-bottom: 120px; } 
+        .detail-hero-backdrop { width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 0 30px 0 rgba(0, 255, 255, 0.25); border: 1px solid rgba(0, 255, 255, 0.2); background-color: #000; } 
+        .hero-backdrop-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; } 
+        .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; background: linear-gradient(180deg, rgba(20,20,20,0) 50%, rgba(20,20,20,0.8) 100%); } 
+        .overlay-poster { position: absolute; z-index: 4; bottom: -80px; left: 20px; width: 35%; max-width: 150px; border-radius: 12px; border: 3px solid rgba(255, 255, 255, 0.15); box-shadow: 0 15px 35px rgba(0,0,0,0.8); } 
         .content-type-badge { position: absolute; z-index: 3; bottom: 20px; right: 20px; background-color: #00ff00; color: #000; padding: 10px 25px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; }
 
-        .content-info-section { padding: 20px; }
-        .detail-title { font-size: 2rem; font-weight: 700; line-height: 1.3; margin-bottom: 15px; }
-        .detail-meta { display: flex; flex-wrap: wrap; gap: 10px 20px; color: var(--text-dark); margin-bottom: 20px; font-size: 0.9rem; }
-        .meta-item { display: flex; align-items: center; gap: 8px; }
-        .meta-item.rating { color: #f5c518; font-weight: 600; }
-        .detail-overview { font-size: 1rem; line-height: 1.7; color: var(--text-dark); margin-bottom: 30px; }
-        .section-title { font-size: 1.5rem; font-weight: 700; margin: 30px 0 20px 0; padding-bottom: 5px; border-bottom: 2px solid var(--primary-color); display: inline-block; }
+        /* Auto Blur System CSS */
+        body.auto-blur .movie-poster, body.auto-blur .overlay-poster { filter: blur(12px); transition: filter 0.3s ease; }
+        body.auto-blur .hero-backdrop-img { filter: blur(15px); transition: filter 0.3s ease; }
+        body.auto-blur .movie-poster:hover, body.auto-blur .overlay-poster:hover { filter: blur(0px); }
+        body.auto-blur .hero-backdrop-img:hover { filter: blur(0px); }
+        .blur-toggle-btn { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; margin-right: 15px;}
 
-        .trailer-section { margin: 0 0 40px 0; }
-        .trailer-section h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 20px; }
-        .trailer-video-wrap { position: relative; width: 100%; max-width: 900px; margin: 0 auto; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; }
+        .content-info-section { padding: 20px; } 
+        .detail-title { font-size: 2rem; font-weight: 700; line-height: 1.3; margin-bottom: 15px; } 
+        .detail-meta { display: flex; flex-wrap: wrap; gap: 10px 20px; color: var(--text-dark); margin-bottom: 20px; font-size: 0.9rem; } 
+        .meta-item { display: flex; align-items: center; gap: 8px; } 
+        .meta-item.rating { color: #f5c518; font-weight: 600; } 
+        .detail-overview { font-size: 1rem; line-height: 1.7; color: var(--text-dark); margin-bottom: 30px; }
+
+        .section-title { font-size: 1.5rem; font-weight: 700; margin: 30px 0 20px 0; padding-bottom: 5px; border-bottom: 2px solid var(--primary-color); display: inline-block; } 
+        .ad-container { margin: 30px auto; text-align: center; width: 100%; max-width: 100%; display: flex; justify-content: center; overflow: hidden; } 
+        
+        .trailer-section { margin: 0 0 40px 0; } 
+        .trailer-section h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 20px; } 
+        .trailer-video-wrap { position: relative; width: 100%; max-width: 900px; margin: 0 auto; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; } 
         .trailer-video-wrap iframe { position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: 0; }
 
-        .related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        @media (max-width: 768px) { .related-grid { gap: 10px; } }
-        @media (min-width: 769px) {
-            .container { padding: 0 40px; }
-            .hero-section-wrapper { margin: 0 40px 40px 40px; margin-bottom: 60px; }
-            .overlay-poster { left: 50px; bottom: -80px; max-width: 220px; }
-            .content-info-section { padding-left: 300px; }
-            .detail-title { font-size: 2.5rem; }
-            .related-grid { grid-template-columns: repeat(4, 1fr); }
-        }
-        body.light-mode .go-back-btn { background-color: #e9ecef; color: #495057; border: 1px solid #dee2e6; }
-        body.light-mode .hero-section-wrapper { margin-bottom: 40px; }
-        body.light-mode .detail-hero-backdrop { box-shadow: 0 8px 25px rgba(0,0,0,0.1); border: 1px solid #e9ecef; }
-        body.light-mode .overlay-poster { border-color: rgba(0,0,0,0.1); }
+        .category-section { margin-top: 50px; } 
+        .category-header { margin-bottom: 20px; } 
+        .category-title { font-size: 1.5rem; font-weight: 600; padding-bottom: 5px; border-bottom: 2px solid var(--primary-color); display: inline-block; }
+        .related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; } 
+        .movie-card { display: block; border-radius: 12px; overflow: hidden; background-color: var(--card-bg); border: 1px solid #2a2a2a; transition: transform 0.2s ease, box-shadow 0.2s ease; } 
+        .movie-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); }
+        .poster-wrapper { position: relative; } 
+        .movie-poster { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; }
+        .card-info { padding: 12px; } 
+        .card-title { font-size: 0.9rem; font-weight: 500; color: var(--text-light); margin: 0; line-height: 1.4; min-height: 2.8em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        .badges-top, .badges-bottom { position: absolute; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; z-index: 2; pointer-events: none; } 
+        .badges-top { top: 0; } 
+        .badges-bottom { bottom: 8px; padding: 0 8px; } 
+        .badge-group-left, .badge-group-right { display: flex; gap: 6px; pointer-events: all; align-items: center; } 
+        .badges-top .badge-group-right { padding-right: 8px; } 
+        .language-tag, .rating-tag, .type-tag { padding: 4px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 6px; color: white; display: inline-flex; align-items: center; gap: 4px; } 
+        .language-tag { background-color: rgba(0, 0, 0, 0.7); } 
+        .rating-tag { background-color: rgba(245, 197, 24, 0.9); color: #000; } 
+        .type-tag { background-color: #00E599; color: #000; } 
+        .new-badge { background-color: var(--primary-color); color: white; font-weight: 700; padding: 4px 12px 4px 8px; font-size: 0.7rem; clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%); }
 
-        .report-button { display: inline-flex; align-items: center; gap: 10px; background-color: #555; color: #fff; padding: 12px 25px; border-radius: 8px; font-size: 1rem; font-weight: 500; border: 1px solid #666; transition: background-color 0.2s ease; }
-        .report-button:hover { background-color: #6c757d; }
-        .edit-icon-link { position: absolute; top: 20px; right: 20px; background-color: rgba(0, 0, 0, 0.6); color: #fff; padding: 10px; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border-radius: 50%; font-size: 1.2rem; transition: background-color 0.2s, transform 0.2s; z-index: 10; border: 2px solid #555; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .edit-icon-link:hover { background-color: var(--primary-color); border-color: var(--primary-color); transform: scale(1.1); }
-        @media (min-width: 768px) { .edit-icon-link { right: 50px; } }
+        .report-button { display: inline-flex; align-items: center; gap: 10px; background-color: #555; color: #fff; padding: 12px 25px; border-radius: 8px; font-size: 1rem; font-weight: 500; border: 1px solid #666; transition: background-color 0.2s ease; } 
+        .report-button:hover { background-color: #6c757d; } 
+        .edit-icon-link { position: absolute; top: 20px; right: 20px; background-color: rgba(0, 0, 0, 0.6); color: #fff; padding: 10px; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border-radius: 50%; font-size: 1.2rem; transition: background-color 0.2s, transform 0.2s; z-index: 10; border: 2px solid #555; box-shadow: 0 4px 10px rgba(0,0,0,0.5); } 
+        .edit-icon-link:hover { background-color: var(--primary-color); border-color: var(--primary-color); transform: scale(1.1); } 
+        
+        .professional-footer { background: linear-gradient(to bottom, #1a1a1a, #0f0f0f); color: var(--text-dark); padding-top: 60px; margin-top: 50px; border-top: 4px solid #000; }
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; padding-bottom: 50px; }
+        .footer-column-title { font-size: 1.3rem; font-weight: 600; color: var(--text-light); margin-bottom: 25px; position: relative; padding-bottom: 10px; }
+        .footer-column-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 50px; height: 3px; background-color: var(--primary-color); }
+        .footer-logo h2 { max-width: 160px; margin-bottom: 15px; color: var(--primary-color);}
+        .footer-description { font-size: 0.95rem; line-height: 1.7; }
+        .links-section ul { list-style: none; padding: 0; margin: 0; } .links-section ul li { margin-bottom: 12px; } .links-section ul li a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-dark); transition: all 0.2s ease-in-out; } .links-section ul li a:hover { color: var(--primary-color); transform: translateX(5px); }
+        .telegram-buttons-container { display: flex; flex-direction: column; gap: 15px; } .telegram-button { display: flex; align-items: center; gap: 15px; padding: 12px 15px; border-radius: 8px; text-decoration: none; color: white; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease; } .telegram-button:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--primary-color); transform: translateY(-2px); } .telegram-button i { font-size: 1.8rem; width: 30px; text-align: center; } .telegram-button.notification i { color: #34B7F1; } .telegram-button.request i { color: #f5c518; } .telegram-button.backup i { color: #28a745; } .telegram-button span { display: flex; flex-direction: column; } .telegram-button small { font-size: 0.75rem; color: var(--text-dark); }
+        .footer-note { font-size: 0.8rem; color: var(--text-dark); margin-top: 20px; background-color: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; } .footer-note a { color: #34B7F1; font-weight: bold; }
+        .footer-bottom-bar { background-color: #000; text-align: center; padding: 20px; font-size: 0.9rem; border-top: 1px solid #222; }
 
-        @keyframes rgb-glow-border { 0% { border-color: #ff00de; box-shadow: 0 0 8px #ff00de; } 25% { border-color: #00ffff; box-shadow: 0 0 10px #00ffff; } 50% { border-color: #00ff7f; box-shadow: 0 0 8px #00ff7f; } 75% { border-color: #f83d61; box-shadow: 0 0 10px #f83d61; } 100% { border-color: #ff00de; box-shadow: 0 0 8px #ff00de; } }
-        .gallery-content-wrapper { max-width: 90%; margin: 0 auto; margin-bottom: 30px;}
-        .gallery-item a { display: block; position: relative; padding-top: 56.25%; border-radius: 8px; overflow: hidden; border: 2px solid transparent; animation: rgb-glow-border 5s linear infinite; }
-        .gallery-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 0.7s ease-in-out; }
-        .thumbnail-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        #auto-change-item .changing-image { opacity: 0; } #auto-change-item .changing-image.active { opacity: 1; }
-        @media (min-width: 768px) {
-            .gallery-content-wrapper { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; max-width: 1200px; }
-            .hero-image-container { grid-column: 1 / 2; }
-            .thumbnail-stack { grid-column: 2 / 3; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 0; }
-        }
+        @keyframes rgb-glow-border { 0% { border-color: #ff00de; box-shadow: 0 0 8px #ff00de; } 25% { border-color: #00ffff; box-shadow: 0 0 10px #00ffff; } 50% { border-color: #00ff7f; box-shadow: 0 0 8px #00ff7f; } 75% { border-color: #f83d61; box-shadow: 0 0 10px #f83d61; } 100% { border-color: #ff00de; box-shadow: 0 0 8px #ff00de; } } 
+        .gallery-content-wrapper { max-width: 90%; margin: 0 auto; margin-bottom: 30px;} 
+        .gallery-item a { display: block; position: relative; padding-top: 56.25%; border-radius: 8px; overflow: hidden; border: 2px solid transparent; animation: rgb-glow-border 5s linear infinite; } 
+        .gallery-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 0.7s ease-in-out; } 
+        .thumbnail-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; } 
+        #auto-change-item .changing-image { opacity: 0; } #auto-change-item .changing-image.active { opacity: 1; } 
 
-        .download-hub-section { background-color: var(--card-bg); border: 1px solid #2a2a2a; border-radius: 12px; padding: 25px; margin: 40px auto; max-width: 800px; text-align: center; }
-        .hub-section-title { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 1.5rem; font-weight: 600; margin: 0 0 10px 0; }
-        .hub-section-description { color: var(--text-dark); margin: 0 0 25px 0; font-size: 1rem; line-height: 1.6; }
-        .hub-proceed-button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; background-color: var(--primary-color); color: white; padding: 15px 35px; border-radius: 8px; font-size: 1.2rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(229, 9, 20, 0.3); }
+        .download-hub-section { background-color: var(--card-bg); border: 1px solid #2a2a2a; border-radius: 12px; padding: 25px; margin: 40px auto; max-width: 800px; text-align: center; } 
+        .hub-section-title { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 1.5rem; font-weight: 600; margin: 0 0 10px 0; } 
+        .hub-section-description { color: var(--text-dark); margin: 0 0 25px 0; font-size: 1rem; line-height: 1.6; } 
+        .hub-proceed-button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; background-color: var(--primary-color); color: white; padding: 15px 35px; border-radius: 8px; font-size: 1.2rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(229, 9, 20, 0.3); } 
         .hub-proceed-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(229, 9, 20, 0.5); filter: brightness(1.1); }
+
+        @media (max-width: 768px) { 
+            .related-grid { gap: 10px; } .card-title { font-size: 0.8rem; } .badges-bottom { bottom: 6px; padding: 0 6px; } 
+            .language-tag, .rating-tag, .type-tag { padding: 2px 7px; font-size: 0.6rem; border-radius: 4px; } 
+            .new-badge { padding: 3px 10px 3px 6px; font-size: 0.6rem; } 
+            .footer-grid { text-align: center; } .footer-column-title::after { left: 50%; transform: translateX(-50%); } .links-section ul li a { justify-content: center; }
+        } 
+        @media (min-width: 769px) { 
+            .container { padding: 0 40px; } .hero-section-wrapper { margin: 0 40px 40px 40px; margin-bottom: 60px; } .overlay-poster { left: 50px; bottom: -80px; max-width: 220px; } .content-info-section { padding-left: 300px; } .detail-title { font-size: 2.5rem; } .related-grid { grid-template-columns: repeat(4, 1fr); } 
+            .edit-icon-link { right: 50px; }
+            .gallery-content-wrapper { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; max-width: 1200px; } .hero-image-container { grid-column: 1 / 2; } .thumbnail-stack { grid-column: 2 / 3; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 0; }
+        }
     </style>
     {{ ad_settings.ad_header | safe }}
 </head>
 <body>
-    {{ header_nav_html | safe }}
-    {{ macro_html | safe }}
-    
+    <header class="main-header">
+        <div class="header-content container">
+            <a href="{{ url_for('home') }}" class="logo">{{ website_name }}</a>
+            <div style="display:flex; align-items:center;">
+                <!-- NEW: Eye Icon for Auto Blur Toggle -->
+                <button id="blur-toggle-btn" class="blur-toggle-btn" title="Toggle Anti-Copyright Blur">
+                    <i class="fas fa-eye-slash" id="blur-icon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    {% macro render_movie_card(m) %}
+    <a href="{{ url_for('movie_detail', movie_id=m._id) }}" class="movie-card">
+      <div class="poster-wrapper">
+        <div class="badges-top">
+            <div class="badge-group-left">
+                {% if (datetime.utcnow() - m._id.generation_time.replace(tzinfo=None)).days < 7 %}
+                    <span class="new-badge">NEW</span>
+                {% endif %}
+            </div>
+            <div class="badge-group-right">
+                {% if m.poster_badge %}
+                    <span class="language-tag">{{ m.poster_badge }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <img class="movie-poster" loading="lazy" src="{{ m.poster or 'https://via.placeholder.com/400x600.png?text=No+Image' }}" alt="{{ m.title }}">
+        <div class="badges-bottom">
+            <div class="badge-group-left">
+                {% if m.vote_average and m.vote_average > 0 %}
+                    <span class="rating-tag"><i class="fas fa-star"></i> {{ "%.1f"|format(m.vote_average) }}</span>
+                {% endif %}
+            </div>
+            <div class="badge-group-right">
+                <span class="type-tag">{{ m.type | title }}</span>
+            </div>
+        </div>
+      </div>
+      <div class="card-info">
+        <h4 class="card-title">
+          {{ m.title }}
+          {% if m.release_year %} ({{ m.release_year }}){% elif m.release_date %} ({{ m.release_date.split('-')[0] }}){% endif %}
+        </h4>
+      </div>
+    </a>
+    {% endmacro %}
+
     <div class="container">
         <div class="page-header"><a href="javascript:history.back()" class="go-back-btn"><i class="fas fa-arrow-left"></i> Back</a></div>
         
@@ -1144,9 +1224,94 @@ detail_html = """
         {% endif %}
     </div>
 
-    {{ footer_html | safe }}
+    <footer class="professional-footer">
+        <div class="footer-grid">
+            <div class="footer-column about-section">
+                <h4 class="footer-column-title">About {{ website_name }}</h4>
+                <div class="footer-logo">
+                    <h2 style="color: var(--primary-color); margin: 0 0 10px 0;">{{ website_name }}</h2>
+                </div>
+                <p class="footer-description">
+                    Your ultimate destination for downloading and streaming the latest movies and web series. We provide high-quality content ranging from 480p to 4K. Bookmark us for your daily entertainment dose!
+                </p>
+            </div>
+            <div class="footer-column links-section">
+                <h4 class="footer-column-title">Site Links</h4>
+                <ul>
+                    <li><a href="{{ url_for('dmca') }}"><i class="fas fa-gavel"></i> DMCA Policy</a></li>
+                    <li><a href="{{ url_for('disclaimer') }}"><i class="fas fa-exclamation-triangle"></i> Disclaimer</a></li>
+                    <li><a href="{{ url_for('create_website') }}"><i class="fas fa-palette"></i> Create Your Website</a></li>
+                </ul>
+            </div>
+            <div class="footer-column community-section">
+                <h4 class="footer-column-title">Join Our Community</h4>
+                <div class="telegram-buttons-container">
+                    <a href="https://t.me/allmoviepsz" target="_blank" class="telegram-button notification">
+                        <i class="fas fa-bell"></i>
+                        <span><strong>New Content Alerts</strong><small>Get notified for every new upload</small></span>
+                    </a>
+                    <a href="https://t.me/+0kZRI3EUX54wM2Nl" target="_blank" class="telegram-button request">
+                        <i class="fas fa-comments"></i>
+                        <span><strong>Join Request Group</strong><small>Request your favorite content</small></span>
+                    </a>
+                    <a href="https://t.me/Yabotz" target="_blank" class="telegram-button backup">
+                        <i class="fas fa-shield-alt"></i>
+                        <span><strong>Backup Channel</strong><small>Join for future updates</small></span>
+                    </a>
+                </div>
+                <p class="footer-note">
+                    <strong>Alternatively,</strong> you can use the <a href="{{ url_for('request_content') }}">Request</a> option in our bottom menu to submit requests directly on the site.
+                </p>
+            </div>
+        </div>
+        <div class="footer-bottom-bar">
+            <p>&copy; {{ datetime.utcnow().year }} {{ website_name }}. All Rights Reserved. Crafted with care for movie lovers.</p>
+        </div>
+    </footer>
+
     {{ ad_settings.ad_footer | safe }}
+    
     <script>
+        // === [NEW] AUTO BLUR LOGIC ===
+        const blurConfig = {
+            enabled: "{{ blur_settings.enabled }}" === "yes",
+            timer: parseInt("{{ blur_settings.timer }}") * 1000
+        };
+        let isBlurred = false;
+        let blurTimeout;
+
+        function applyBlur() {
+            document.body.classList.add('auto-blur');
+            const icon = document.getElementById('blur-icon');
+            if(icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+            isBlurred = true;
+        }
+
+        function removeBlur() {
+            document.body.classList.remove('auto-blur');
+            const icon = document.getElementById('blur-icon');
+            if(icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+            isBlurred = false;
+        }
+
+        if (blurConfig.enabled) {
+            if(blurConfig.timer === 0) { applyBlur(); } 
+            else { blurTimeout = setTimeout(applyBlur, blurConfig.timer); }
+        }
+
+        const blurBtn = document.getElementById('blur-toggle-btn');
+        if(blurBtn) {
+            blurBtn.addEventListener('click', function() {
+                if (isBlurred) {
+                    removeBlur();
+                    clearTimeout(blurTimeout);
+                } else {
+                    applyBlur();
+                }
+            });
+        }
+        // === END AUTO BLUR LOGIC ===
+        
         document.addEventListener('DOMContentLoaded', function() {
             const autoChangeContainer = document.getElementById('auto-change-item');
             if (autoChangeContainer) {
@@ -1168,10 +1333,6 @@ detail_html = """
 </html>
 """
 
-# =========================================================================================
-# === WAIT & HUB TEMPLATES ===
-# =========================================================================================
-
 wait_step1_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -1179,13 +1340,14 @@ wait_step1_html = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Please Wait - Step 1</title>
-    {{ base_css_js | safe }}
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .fixed-header { position: fixed; top: 0; left: 0; width: 100%; background-color: var(--card-bg); padding: 10px 0; z-index: 1000; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border-bottom: 1px solid #333; }
-        .fixed-header img { height: 50px; width: auto; }
+        :root { --bg-color: #000000; --card-bg: #1a1a1a; --primary-color: #e50914; --text-light: #ffffff; --text-dark: #aaaaaa; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding-bottom: 60px; text-align: center;}
+        .fixed-header { position: fixed; top: 0; left: 0; width: 100%; background-color: var(--card-bg); padding: 15px 0; z-index: 1000; border-bottom: 1px solid #333; }
         .page-section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         #top-content { padding-top: 80px; }
-        .wait-container { background-color: var(--card-bg); padding: 40px; border-radius: 12px; max-width: 500px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center;}
+        .wait-container { background-color: var(--card-bg); padding: 40px; border-radius: 12px; max-width: 500px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         h1 { font-size: 1.8rem; color: var(--primary-color); margin-bottom: 20px; }
         p { color: var(--text-dark); margin-bottom: 30px; font-size: 1rem; }
         .timer { font-size: 2.5rem; font-weight: 700; color: var(--text-light); margin-bottom: 30px; }
@@ -1210,7 +1372,7 @@ wait_step1_html = """
         {% if ad_settings.ad_wait_page %}<div class="ad-container">{{ ad_settings.ad_wait_page | safe }}</div>{% endif %}
     </div>
     <div class="ad-section" style="padding: 50px 0;">
-        <h2 style="text-align:center;">Advertisement</h2>
+        <h2>Advertisement</h2>
         {% if ad_settings.ad_wait_page %}<div class="ad-container" style="min-height: 200px;">{{ ad_settings.ad_wait_page | safe }}</div>{% endif %}
     </div>
     <div id="bottom-content" class="page-section">
@@ -1242,200 +1404,13 @@ wait_step1_html = """
         })();
     </script>
     {{ ad_settings.ad_footer | safe }}
-</body></html>
-"""
-
-wait_step2_html = wait_step1_html.replace('Step 1', 'Step 2').replace('Please Wait', 'Almost There...').replace('Your download link is being prepared', 'Please wait while we process your request').replace('Continue', 'Continue to Final Step')
-wait_step3_html = wait_step1_html.replace('Step 1', 'Final Step').replace('Please Wait', 'Final Step').replace('Your download link is being prepared', 'Your download link is ready').replace('Ready to Continue', 'Your Link is Ready!').replace('Continue to Final Step', 'Get Link').replace('Click Here to Continue', 'Click to Scroll Down')
-
-download_hub_html = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download {{ movie.title }} - {{ website_name }}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    {{ base_css_js | safe }}
-    <style>
-        .hub-page { display: flex; flex-direction: column; min-height: 100vh; align-items: center; padding: 40px 20px; margin-top: var(--nav-height);}
-        .hub-container { background-color: var(--card-bg); width: 100%; max-width: 700px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); overflow: hidden; border: 1px solid #333; margin-bottom: 40px; }
-        .hub-header { padding: 20px; background-color: #111; text-align: center; }
-        .hub-header h1 { font-size: 1.5rem; margin: 0 0 5px 0; }
-        .hub-header p { font-size: 0.9rem; color: var(--text-dark); margin: 0; }
-        .hub-body { padding: 25px; }
-        .disclaimer-box { background-color: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; color: #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 25px; font-size: 0.9rem; text-align: center; }
-        .quality-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; }
-        .tab-btn { flex-grow: 1; padding: 12px 10px; font-size: 1rem; font-weight: 600; color: var(--text-dark); background-color: #282828; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
-        .tab-btn.active { background-color: var(--primary-color); color: white; }
-        .quality-content { display: none; }
-        .quality-content.active { display: block; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .link-button { display: flex; align-items: center; width: 100%; text-align: left; padding: 15px 20px; margin-bottom: 12px; border-radius: 8px; text-decoration: none; color: white; font-weight: 500; font-size: 1rem; transition: transform 0.2s ease, background-color 0.2s ease; box-sizing: border-box; }
-        .link-button:hover { transform: scale(1.02); }
-        .link-button i { font-size: 1.3rem; margin-right: 15px; width: 25px; text-align: center; }
-        .link-button.stream { background-color: #007bff; } .link-button.stream:hover { background-color: #0069d9; }
-        .link-button.download { background-color: var(--primary-color); } .link-button.download:hover { background-color: #B20710; }
-        .link-button.telegram { background-color: #2AABEE; } .link-button.telegram:hover { background-color: #1e96d1; }
-        .no-links { text-align: center; color: var(--text-dark); padding: 20px; }
-        .hub-footer-actions { text-align: center; padding: 0 25px 25px; }
-        .report-button-hub { display: inline-flex; align-items: center; gap: 10px; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 500; background-color: #444; color: var(--text-light); transition: background-color 0.2s ease; }
-        .report-button-hub:hover { background-color: #555; }
-    </style>
-</head>
-<body>
-    {{ header_nav_html | safe }}
-    <div class="hub-page">
-        <div class="hub-container">
-            <div class="hub-header">
-                <h1>{{ movie.title }}</h1>
-                <p>Choose quality to download or stream</p>
-            </div>
-            <div class="hub-body">
-                <div class="disclaimer-box"><i class="fas fa-info-circle"></i> We do not host any files on our servers. All links provided are from third-party sites.</div>
-                {% if qualities %}
-                <div class="quality-tabs">
-                    {% for quality in sorted_qualities %}
-                        <button class="tab-btn {% if loop.first %}active{% endif %}" data-quality="{{ quality }}">{{ quality }}</button>
-                    {% endfor %}
-                </div>
-                {% for quality, links in qualities.items() %}
-                <div class="quality-content {% if loop.first %}active{% endif %}" id="content-{{ quality }}">
-                    {% for link in links %}
-                        <a href="{{ link.url }}" class="link-button {{ link.type }}" target="_blank">
-                            <i class="fas fa-{{ 'play-circle' if link.type == 'stream' else 'download' if link.type == 'download' else 'paper-plane' }}"></i>
-                            <span>
-                                {% if link.type == 'stream' %}Stream in {{ link.name }} Video 
-                                {% elif link.type == 'download' %}Download in {{ link.quality }} File
-                                {% elif link.type == 'telegram' %}Get {{ link.quality }} from Telegram
-                                {% endif %}
-                            </span>
-                        </a>
-                    {% endfor %}
-                </div>
-                {% endfor %}
-                {% else %}
-                    <p class="no-links">No download links are available for this content yet.</p>
-                {% endif %}
-            </div>
-            <div class="hub-footer-actions">
-                <a href="{{ url_for('request_content', report_id=movie._id, title=movie.title) }}" class="report-button-hub"><i class="fas fa-flag"></i> Report a Problem</a>
-            </div>
-        </div>
-    </div>
-    {{ footer_html | safe }}
-    <script>
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.quality-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('content-' + btn.dataset.quality).classList.add('active');
-            });
-        });
-    </script>
 </body>
 </html>
 """
 
-series_hub_html = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Watch {{ series.title }} - {{ website_name }}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    {{ base_css_js | safe }}
-    <style>
-        .hub-page { display: flex; flex-direction: column; min-height: 100vh; align-items: center; padding: 40px 20px; margin-top: var(--nav-height);}
-        .hub-container { background-color: var(--card-bg); width: 100%; max-width: 800px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); overflow: hidden; border: 1px solid #333; margin-bottom: 40px; }
-        .hub-header { padding: 20px; background-color: #111; text-align: center; }
-        .hub-body { padding: 25px; }
-        .season-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; }
-        .tab-btn { flex-grow: 1; padding: 12px 10px; font-size: 1rem; font-weight: 600; color: var(--text-dark); background-color: #282828; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
-        .tab-btn.active { background-color: var(--primary-color); color: white; }
-        .episode-list { display: none; }
-        .episode-list.active { display: block; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .episode-item-hub { background-color: #222; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary-color); }
-        .episode-title-hub { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; }
-        .episode-buttons-hub { display: flex; flex-wrap: wrap; gap: 10px; }
-        .link-button { flex: 1; min-width: 150px; text-align: center; padding: 10px; border-radius: 6px; color: white; font-weight: 500; font-size: 0.9rem; transition: 0.2s; }
-        .link-button.stream { background-color: #007bff; } .link-button.stream:hover { background-color: #0069d9; }
-        .link-button.download { background-color: var(--primary-color); } .link-button.download:hover { background-color: #B20710; }
-        .link-button.telegram { background-color: #2AABEE; } .link-button.telegram:hover { background-color: #1e96d1; }
-        .link-button.custom { background-color: #555; } .link-button.custom:hover { background-color: #444; }
-        .custom-links-container { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
-        .hub-footer-actions { text-align: center; padding: 0 25px 25px; }
-        .report-button-hub { display: inline-flex; align-items: center; gap: 10px; padding: 10px 20px; border-radius: 6px; background-color: #444; color: white; transition: 0.2s; }
-        .report-button-hub:hover { background-color: #555; }
-    </style>
-</head>
-<body>
-    {{ header_nav_html | safe }}
-    <div class="hub-page">
-        <div class="hub-container">
-            <div class="hub-header">
-                <h1 style="margin:0; font-size: 1.8rem;">{{ series.title }}</h1>
-                <p style="color:var(--text-dark);">All Episodes</p>
-            </div>
-            <div class="hub-body">
-                {% if episodes_by_season %}
-                <div class="season-tabs">
-                    {% for season_num in seasons_sorted %}
-                        <button class="tab-btn {% if loop.first %}active{% endif %}" data-season="{{ season_num }}">Season {{ season_num }}</button>
-                    {% endfor %}
-                </div>
-                {% for season_num in seasons_sorted %}
-                <div class="episode-list {% if loop.first %}active{% endif %}" id="season-{{ season_num }}">
-                    {% for ep in episodes_by_season[season_num] | sort(attribute='episode_number') %}
-                    <div class="episode-item-hub">
-                        <div class="episode-title-hub">Episode {{ ep.episode_number }}{% if ep.title %}: {{ ep.title }}{% endif %}</div>
-                        <div class="episode-buttons-hub">
-                            {% if ep.stream_link %}<a href="{{ ep.stream_link }}" class="link-button stream" target="_blank"><i class="fas fa-play"></i> Stream</a>{% endif %}
-                            {% if ep.download_link %}<a href="{{ ep.download_link }}" class="link-button download" target="_blank"><i class="fas fa-download"></i> Download</a>{% endif %}
-                            {% if ep.telegram_link %}<a href="{{ ep.telegram_link }}" class="link-button telegram" target="_blank"><i class="fab fa-telegram"></i> Telegram</a>{% endif %}
-                        </div>
-                        {% if ep.links %}
-                        <div class="custom-links-container">
-                            {% for link in ep.links %}<a href="{{ link.url }}" class="link-button custom" target="_blank"><i class="fas fa-link"></i> {{ link.text }}</a>{% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endfor %}
-                {% else %}
-                    <p style="text-align:center;">No episodes available.</p>
-                {% endif %}
-            </div>
-            <div class="hub-footer-actions">
-                <a href="{{ url_for('request_content', report_id=series._id, title=series.title) }}" class="report-button-hub"><i class="fas fa-flag"></i> Report Problem</a>
-            </div>
-        </div>
-    </div>
-    {{ footer_html | safe }}
-    <script>
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.episode-list').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('season-' + btn.dataset.season).classList.add('active');
-            });
-        });
-    </script>
-</body>
-</html>
-"""
+wait_step2_html = wait_step1_html.replace('Step 1', 'Step 2').replace('Please Wait', 'Almost There...').replace('Your download link is being prepared', 'Please wait while we process your request').replace('Continue', 'Continue to Final Step').replace('Ready to Continue', 'Ready for Final Step')
 
-# =========================================================================================
-# === MISC PAGES (DMCA, Disclaimer, Request, Create Website, Genres) ===
-# =========================================================================================
+wait_step3_html = wait_step1_html.replace('Step 1', 'Final Step').replace('Please Wait', 'Final Step').replace('Your download link is being prepared', 'Your download link is ready').replace('Ready to Continue', 'Your Link is Ready!').replace('Continue', 'Get Link').replace('Click Here to Continue', 'Click to Scroll Down').replace('href="#bottom-content"', 'href="{{ target_url | safe }}"')
 
 request_html = """
 <!DOCTYPE html>
@@ -1444,37 +1419,29 @@ request_html = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Request Content - {{ website_name }}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    {{ base_css_js | safe }}
     <style>
-        .form-container { max-width: 600px; margin: 40px auto; background-color: var(--card-bg); padding: 30px; border-radius: 8px; border: 1px solid #333; margin-top: calc(var(--nav-height) + 40px); }
+        :root { --bg-color: #000000; --card-bg: #1a1a1a; --primary-color: #e50914; --text-light: #ffffff; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-light); margin: 0; padding: 20px;}
+        .form-container { max-width: 600px; margin: 40px auto; background-color: var(--card-bg); padding: 30px; border-radius: 8px; border: 1px solid #333; }
         .form-container h2 { text-align: center; margin-bottom: 20px; color: var(--primary-color); }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
-        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid #444; border-radius: 4px; background-color: #111; color: white; font-family: inherit; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid #444; border-radius: 4px; background-color: #111; color: white; font-family: inherit; box-sizing: border-box; }
         .submit-btn { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
         .submit-btn:hover { background-color: #B20710; }
-        .success-msg { text-align: center; padding: 20px; background-color: rgba(40, 167, 69, 0.2); border: 1px solid #28a745; border-radius: 8px; margin-top: 40px; color: #28a745; }
     </style>
 </head>
 <body>
-    {{ header_nav_html | safe }}
-    <div class="container">
+    <div class="form-container">
         {% if message_sent %}
-        <div class="form-container" style="text-align: center;">
-            <i class="fas fa-check-circle" style="font-size: 4rem; color: #28a745; margin-bottom: 20px;"></i>
             <h2 style="color: #28a745;">Request Submitted Successfully!</h2>
-            <p style="margin-bottom: 20px;">Thank you for reaching out. Our team will look into it shortly.</p>
-            <a href="{{ url_for('home') }}" class="submit-btn" style="text-decoration: none; display: inline-block;">Return to Home</a>
-        </div>
+            <p style="text-align:center;">Thank you for reaching out. Our team will look into it shortly.</p>
+            <a href="{{ url_for('home') }}" class="submit-btn" style="text-decoration: none; display: block; text-align:center; margin-top:20px;">Return to Home</a>
         {% else %}
-        <div class="form-container">
             <h2>{{ 'Report a Problem' if prefill_id else 'Request Content' }}</h2>
             <form method="post">
-                {% if prefill_id %}
-                <input type="hidden" name="reported_content_id" value="{{ prefill_id }}">
-                {% endif %}
+                {% if prefill_id %}<input type="hidden" name="reported_content_id" value="{{ prefill_id }}">{% endif %}
                 <div class="form-group">
                     <label>Subject</label>
                     <select name="type">
@@ -1497,59 +1464,16 @@ request_html = """
                     <textarea name="message" rows="5" required placeholder="Tell us more details..."></textarea>
                 </div>
                 <button type="submit" class="submit-btn">Submit Request</button>
+                <a href="{{ url_for('home') }}" style="display:block; text-align:center; margin-top:15px; color:#aaa; text-decoration:none;">Cancel & Go Back</a>
             </form>
-        </div>
         {% endif %}
     </div>
-    {{ footer_html | safe }}
 </body>
 </html>
 """
 
-disclaimer_html = """
-<!DOCTYPE html>
-<html lang="en"><head><title>Disclaimer - {{ website_name }}</title>{{ base_css_js | safe }}
-<style>.content-box{max-width:800px;margin:100px auto 40px;background:var(--card-bg);padding:30px;border-radius:8px;}h1{color:var(--primary-color);text-align:center}</style></head>
-<body>{{ header_nav_html | safe }}
-<div class="container content-box"><h1>Disclaimer</h1>
-<p>The materials on {{ website_name }}'s website are provided on an 'as is' basis. We make no warranties, expressed or implied. All links point to external third-party servers.</p></div>
-{{ footer_html | safe }}</body></html>
-"""
-
-dmca_html = """
-<!DOCTYPE html>
-<html lang="en"><head><title>DMCA Policy - {{ website_name }}</title>{{ base_css_js | safe }}
-<style>.content-box{max-width:800px;margin:100px auto 40px;background:var(--card-bg);padding:30px;border-radius:8px;}h1{color:var(--primary-color);text-align:center}</style></head>
-<body>{{ header_nav_html | safe }}
-<div class="container content-box"><h1>DMCA Policy</h1>
-<p>We respect the intellectual property rights of others. If you believe your copyright-protected work was posted on {{ website_name }} without authorization, you may submit a copyright infringement notification.</p>
-<p>Please contact us via the <a href="{{ url_for('request_content') }}" style="color:var(--cyan-accent);">Request Page</a> with the exact URLs.</p></div>
-{{ footer_html | safe }}</body></html>
-"""
-
-create_website_html = """
-<!DOCTYPE html>
-<html lang="en"><head><title>Create Your Website - {{ website_name }}</title>{{ base_css_js | safe }}
-<style>.content-box{max-width:800px;margin:100px auto 40px;background:var(--card-bg);padding:30px;border-radius:8px;text-align:center;}h1{color:var(--primary-color);} .contact-btn {display:inline-block;padding:15px 30px;background:#2AABEE;color:white;border-radius:50px;font-weight:bold;margin-top:20px;}</style></head>
-<body>{{ header_nav_html | safe }}
-<div class="container content-box"><h1>Want a Website Like This?</h1>
-<p>We can build a high-quality movie/series downloading or streaming website for you.</p>
-<a href="https://t.me/SVFADMINBOT" class="contact-btn"><i class="fab fa-telegram"></i> Contact Us on Telegram</a></div>
-{{ footer_html | safe }}</body></html>
-"""
-
-genres_html = """
-<!DOCTYPE html>
-<html lang="en"><head><title>All Genres - {{ website_name }}</title>{{ base_css_js | safe }}
-<style>.genre-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:15px;margin-top:100px;margin-bottom:40px;}.genre-card{background:var(--card-bg);padding:20px;text-align:center;border-radius:8px;border:1px solid #333;transition:0.3s;font-weight:bold;}.genre-card:hover{background:var(--primary-color);transform:translateY(-5px);}</style></head>
-<body>{{ header_nav_html | safe }}
-<div class="container"><h1 style="margin-top:100px;text-align:center;">Explore Genres</h1>
-<div class="genre-grid">{% for g in genres %}<a href="{{ url_for('movies_by_genre_name', genre_name=quote(g)) }}" class="genre-card">{{ g }}</a>{% endfor %}</div></div>
-{{ footer_html | safe }}</body></html>
-"""
-
 # =========================================================================================
-# === ADMIN TEMPLATE (Updated with New Tabs) ===
+# === ADMIN TEMPLATES (With 4 Separate Menu Tabs inside Settings) ===
 # =========================================================================================
 
 admin_html = """
@@ -1791,6 +1715,7 @@ admin_html = """
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Blur Settings</button>
             </form>
         </div>
+
     </div>
 
     <script>
@@ -1976,6 +1901,7 @@ fieldset { border:1px solid #444; padding:20px; margin-bottom:20px; border-radiu
 
     <button type="submit" class="btn btn-primary" style="width:100%;">Update Content</button>
 </form>
+<a href="{{ url_for('admin') }}" style="display:block; text-align:center; margin-top:15px; color:#aaa; text-decoration:none;">Cancel & Go Back</a>
 </div>
 <script>
     function addBackdropField() {
@@ -2002,8 +1928,9 @@ fieldset { border:1px solid #444; padding:20px; margin-bottom:20px; border-radiu
 </body></html>
 """
 
+
 # =========================================================================================
-# === PYTHON FUNCTIONS & ROUTES ===
+# === PYTHON FUNCTIONS AND ROUTES ===
 # =========================================================================================
 
 def get_tmdb_details(tmdb_id, media_type):
@@ -2293,7 +2220,6 @@ def wait_page():
     wait_config = settings.find_one({"_id": "wait_config"}) or {"step1": 10, "step2": 7, "step3": 5, "total_steps": 3}
     total_steps = wait_config.get('total_steps', 3)
     wait_time = wait_config.get('step1', 10)
-    
     if total_steps == 1: next_step_url = unquote(encoded_target_url)
     elif total_steps == 2: next_step_url = url_for('wait_page_step3', target=encoded_target_url)
     else: next_step_url = url_for('wait_page_step2', target=encoded_target_url)
